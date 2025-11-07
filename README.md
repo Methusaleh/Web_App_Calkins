@@ -1,4 +1,4 @@
-# **Project Title**
+# **Skill Swap Web App**
 
 A brief description of what this project does and who it's for. Explain the core problem it solves or the main functionality it provides.
 
@@ -31,7 +31,7 @@ npm install npm@latest \-g
 ### **Installation**
 
 1. Clone the repo  
-   git clone \[https://github.com/your-username/your-project-name.git\](https://github.com/your-username/your-project-name.git)
+   git clone https://github.com/Methusaleh/Web_App_Calkins/
 
 2. Navigate to the project directory  
    cd your-project-name
