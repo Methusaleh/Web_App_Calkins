@@ -1,0 +1,24 @@
+{
+  "name": "bpa_web_app",
+  "version": "1.0.0",
+  "description": "A brief description of what this project does and who it's for. Explain the core problem it solves or the main functionality it provides.",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1" 
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Methusaleh/Web_App_Calkins.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Methusaleh/Web_App_Calkins/issues"
+  },
+  "homepage": "https://github.com/Methusaleh/Web_App_Calkins#readme",
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

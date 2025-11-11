@@ -1,0 +1,11 @@
+# Ignore compiled dependencies from your local machine
+node_modules
+
+# Ignore Git files and local settings
+.git
+.gitignore 
+.env
+.DS_Store
+
+# Ignore logs
+npm-debug.log
