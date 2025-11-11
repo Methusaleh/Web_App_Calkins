@@ -4,7 +4,7 @@
   "description": "A brief description of what this project does and who it's for. Explain the core problem it solves or the main functionality it provides.",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1" 
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -19,6 +19,10 @@
   },
   "homepage": "https://github.com/Methusaleh/Web_App_Calkins#readme",
   "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "morgan": "^1.10.1",
     "pg": "^8.16.3"
   }
 }
