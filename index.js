@@ -1,7 +1,5 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import cors from 'cors';
-import morgan from 'morgan';
 import pg from 'pg';
 
 const app = express();
@@ -14,7 +12,11 @@ const pool = new Pool({
     }
 });
 
+app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+  res.send('BPA Express Server is running');
+});
 
 
 
