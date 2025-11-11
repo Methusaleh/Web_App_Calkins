@@ -1,6 +1,8 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import pg from 'pg';
+import morgan from 'morgan';
+import cors from 'cors';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -13,6 +15,8 @@ const pool = new Pool({
 });
 
 app.use(bodyParser.json());
+app.use(morgan('combined'));
+app.use(cors());
 
 app.get('/', (req, res) => {
   res.send('BPA Express Server is running');
