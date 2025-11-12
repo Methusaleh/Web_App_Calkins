@@ -25,9 +25,23 @@ app.use(bodyParser.json());
 app.use(morgan('combined'));
 app.use(cors());
 
-app.get('/', (req, res) => {
-  res.render('index');
+app.get('/', async (req, res) => {
+let dbVersion = 'Not connected to database';
+
+try {
+  const result = await pool.query('SELECT version()');
+  dbVersion = result.rows[0].version;
+} catch (error) {
+  console.error('CRITICAL: Neon Database Connection or Query Failed:', error.message);
+  dbVersion = `Connection Error: ${error.message}`;
+}
+
+res.render('index', {
+  dbStatus: 'Success',
+  dbVersion: dbVersion,
 });
+});
+
 
 
 
