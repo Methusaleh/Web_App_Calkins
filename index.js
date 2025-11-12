@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import pg from 'pg';
+import bcrypt from 'bcryptjs';
 import morgan from 'morgan';
 import cors from 'cors';
 import path from 'path';
@@ -143,6 +144,94 @@ app.get('/', async (req, res) => {
         dbVersion: dbVersion,
         tablesStatus: tablesStatus,
     });
+});
+
+app.post('/api/register', async (req, res) => {
+    const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege } = req.body;
+
+    if (!email || !password || !userName || !dateOfBirth || !gradeLevel) {
+        return res.status(400).json({ message: 'Missing required registration fields.' });
+    }
+
+    try {
+        const checkUser = await pool.query('SELECT user_id FROM Users WHERE email = $1', [email]);
+        if (checkUser.rows.length > 0) {
+            return res.status(409).json({ message: 'Email address is already registered.' });
+        }
+
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        const result = await pool.query(
+            `INSERT INTO Users (
+                email, 
+                password_hash, 
+                user_name, 
+                date_of_birth, 
+                grade_level, 
+                school_college, 
+                is_admin
+            ) VALUES ($1, $2, $3, $4, $5, $6, FALSE) 
+             RETURNING user_id, user_name, email;`,
+            [email, hashedPassword, userName, dateOfBirth, gradeLevel, schoolCollege || null]
+        );
+
+        const newUser = result.rows[0];
+        res.status(201).json({ 
+            message: 'User registered successfully.', 
+            user: {
+                id: newUser.user_id,
+                name: newUser.user_name,
+                email: newUser.email,
+                isAdmin: false
+            }
+        });
+
+    } catch (error) {
+        console.error('Registration Error:', error.message);
+        res.status(500).json({ message: 'Server error during registration.', error: error.message });
+    }
+});
+
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    try {
+        const result = await pool.query(
+            'SELECT user_id, email, password_hash, user_name, is_admin FROM Users WHERE email = $1', 
+            [email]
+        );
+
+        const user = result.rows[0];
+
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials.' });
+        }
+
+        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+        if (passwordMatch) {
+            res.status(200).json({
+                message: 'Login successful.',
+                user: {
+                    id: user.user_id,
+                    name: user.user_name,
+                    email: user.email,
+                    isAdmin: user.is_admin
+                }
+            });
+        } else {
+            res.status(401).json({ message: 'Invalid credentials.' });
+        }
+
+    } catch (error) {
+        console.error('Login Error:', error.message);
+        res.status(500).json({ message: 'Server error during login.', error: error.message });
+    }
 });
 
 app.listen(port, '0.0.0.0', () => {

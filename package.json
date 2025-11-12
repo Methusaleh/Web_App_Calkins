@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/Methusaleh/Web_App_Calkins#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "ejs": "^3.1.10",
