@@ -120,10 +120,12 @@ async function createTables() {
 app.get('/', async (req, res) => {
     let dbVersion = 'Not connected to database';
     let dbStatus = 'Failed';
+    let tablesStatus = 'Failed';
 
     const tablesReady = await createTables(); 
 
     if (tablesReady) {
+        tablesStatus = 'Ready';
         try {
             const result = await pool.query('SELECT version()');
             dbVersion = result.rows[0].version;
@@ -139,6 +141,7 @@ app.get('/', async (req, res) => {
     res.render('index', {
         dbStatus: dbStatus,
         dbVersion: dbVersion,
+        tablesStatus: tablesStatus,
     });
 });
 
