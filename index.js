@@ -35,7 +35,7 @@ async function createTables() {
             password_hash VARCHAR(255) NOT NULL,
             user_name VARCHAR(100) NOT NULL,
             date_of_birth DATE NOT NULL,
-            grade_level VARCHAR(20) NOT NULL,
+            grade_level VARCHAR(20),
             school_college VARCHAR(100),
             is_admin BOOLEAN DEFAULT FALSE
         );
@@ -149,7 +149,9 @@ app.get('/', async (req, res) => {
 app.post('/api/register', async (req, res) => {
     const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege } = req.body;
 
-    if (!email || !password || !userName || !dateOfBirth || !gradeLevel) {
+    // --- MODIFIED VALIDATION CHECK ---
+    // gradeLevel has been removed from the required list.
+    if (!email || !password || !userName || !dateOfBirth) { 
         return res.status(400).json({ message: 'Missing required registration fields.' });
     }
 
@@ -173,7 +175,8 @@ app.post('/api/register', async (req, res) => {
                 is_admin
             ) VALUES ($1, $2, $3, $4, $5, $6, FALSE) 
              RETURNING user_id, user_name, email;`,
-            [email, hashedPassword, userName, dateOfBirth, gradeLevel, schoolCollege || null]
+            // gradeLevel is included in the parameter array and will be NULL if not provided.
+            [email, hashedPassword, userName, dateOfBirth, gradeLevel || null, schoolCollege || null]
         );
 
         const newUser = result.rows[0];
@@ -231,6 +234,53 @@ app.post('/api/login', async (req, res) => {
     } catch (error) {
         console.error('Login Error:', error.message);
         res.status(500).json({ message: 'Server error during login.', error: error.message });
+    }
+});
+
+// POST /api/user/skills/offer - Manages a user's offered skills
+app.post('/api/user/skills/offer', async (req, res) => {
+    // NOTE: This route requires authentication middleware to ensure the user_id is valid.
+    // For now, we assume req.body contains the user_id and an array of skillIds.
+    
+    const { userId, skillIds } = req.body;
+    
+    if (!userId || !Array.isArray(skillIds)) {
+        return res.status(400).json({ message: 'Missing user ID or skill array.' });
+    }
+
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN'); // Start Transaction
+        
+        // 1. DELETE existing offered skills for this user
+        await client.query('DELETE FROM User_Skills_Offered WHERE user_id = $1', [userId]);
+        
+        // 2. INSERT the new list of offered skills
+        if (skillIds.length > 0) {
+            const insertQueries = skillIds.map(skillId => {
+                return client.query(
+                    'INSERT INTO User_Skills_Offered (user_id, skill_id) VALUES ($1, $2)',
+                    [userId, skillId]
+                );
+            });
+            await Promise.all(insertQueries);
+        }
+        
+        await client.query('COMMIT'); // Commit Transaction
+        
+        res.status(200).json({ 
+            message: 'Offered skills updated successfully.', 
+            skillsCount: skillIds.length
+        });
+        
+    } catch (error) {
+        await client.query('ROLLBACK'); // Rollback on error
+        console.error('Error updating offered skills:', error.message);
+        res.status(500).json({ message: 'Server error while updating skills.' });
+        
+    } finally {
+        client.release();
     }
 });
 
