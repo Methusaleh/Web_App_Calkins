@@ -83,6 +83,3 @@ This project is licensed under the MIT License \- see the LICENSE.md file (if yo
 * Fill in the description.  
 * Update the "Features" and "Technologies Used" lists.  
 * Customize the "Getting Started" instructions to match your project's specific setup commands.
-
-
-poop
