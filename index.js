@@ -284,6 +284,107 @@ app.post('/api/user/skills/offer', async (req, res) => {
     }
 });
 
+// PUT /api/skills/:id - Updates an existing skill name (Admin-only access required)
+app.put('/api/skills/:id', async (req, res) => {
+    // NOTE: Requires admin middleware check.
+    const { id } = req.params;
+    const { skillName } = req.body;
+
+    if (!skillName) {
+        return res.status(400).json({ message: 'New skill name is required.' });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE Skills SET skill_name = $1 WHERE skill_id = $2 RETURNING skill_id, skill_name',
+            [skillName, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Skill not found.' });
+        }
+
+        res.status(200).json({ 
+            message: 'Skill updated successfully.', 
+            skill: result.rows[0] 
+        });
+
+    } catch (error) {
+        console.error('Error updating skill:', error.message);
+        res.status(500).json({ message: 'Server error while updating skill.' });
+    }
+});
+
+// DELETE /api/skills/:id - Deletes a skill (Admin-only access required)
+app.delete('/api/skills/:id', async (req, res) => {
+    // NOTE: Requires admin middleware check.
+    const { id } = req.params;
+
+    try {
+        const result = await pool.query('DELETE FROM Skills WHERE skill_id = $1 RETURNING skill_id', [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Skill not found.' });
+        }
+
+        res.status(200).json({ 
+            message: 'Skill deleted successfully.',
+            deletedId: result.rows[0].skill_id
+        });
+
+    } catch (error) {
+        console.error('Error deleting skill:', error.message);
+        res.status(500).json({ message: 'Server error while deleting skill.' });
+    }
+});
+
+// POST /api/user/skills/seek - Manages a user's skills they seek (want to learn)
+app.post('/api/user/skills/seek', async (req, res) => {
+    // NOTE: This route requires authentication middleware to ensure the user_id is valid.
+    // For now, we assume req.body contains the user_id and an array of skillIds.
+    
+    const { userId, skillIds } = req.body;
+    
+    if (!userId || !Array.isArray(skillIds)) {
+        return res.status(400).json({ message: 'Missing user ID or skill array.' });
+    }
+
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN'); // Start Transaction
+        
+        // 1. DELETE existing sought skills for this user from the junction table
+        await client.query('DELETE FROM User_Skills_Sought WHERE user_id = $1', [userId]);
+        
+        // 2. INSERT the new list of sought skills
+        if (skillIds.length > 0) {
+            const insertQueries = skillIds.map(skillId => {
+                return client.query(
+                    'INSERT INTO User_Skills_Sought (user_id, skill_id) VALUES ($1, $2)',
+                    [userId, skillId]
+                );
+            });
+            await Promise.all(insertQueries);
+        }
+        
+        await client.query('COMMIT'); // Commit Transaction
+        
+        res.status(200).json({ 
+            message: 'Sought skills updated successfully.', 
+            skillsCount: skillIds.length
+        });
+        
+    } catch (error) {
+        await client.query('ROLLBACK'); // Rollback on error
+        console.error('Error updating sought skills:', error.message);
+        res.status(500).json({ message: 'Server error while updating skills.' });
+        
+    } finally {
+        client.release();
+    }
+});
+
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
 });
