@@ -1,4 +1,6 @@
 import express from 'express';
+import session from 'express-session';
+import pgSession from 'connect-pg-simple';
 import bodyParser from 'body-parser';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
@@ -14,6 +16,7 @@ const { Pool } = pg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const PgSession = pgSession(session);
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -22,10 +25,50 @@ const pool = new Pool({
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(session({
+    store: new PgSession({
+        pool: pool,                  // Use your existing PostgreSQL connection pool
+        tableName: 'session'         // Name of the table to store session data
+    }),
+    secret: process.env.SESSION_SECRET || 'a-very-secret-key-for-dev', 
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        secure: 'auto' 
+    }
+}));
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(morgan('combined'));
 app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// --- Authentication Middleware ---
+// 1. Checks if a user is logged in
+function isAuthenticated(req, res, next) {
+    if (req.session.user) {
+        // User is logged in, attach user object to request and continue
+        req.user = req.session.user; 
+        next();
+    } else {
+        // User is not logged in
+        res.status(401).json({ message: 'Unauthorized. Please log in.' });
+    }
+}
+
+// 2. Checks if the logged-in user is an administrator
+function isAdmin(req, res, next) {
+    if (req.session.user && req.session.user.isAdmin) {
+        // User is an admin, attach user object to request and continue
+        req.user = req.session.user;
+        next();
+    } else {
+        // User is not an admin
+        res.status(403).json({ message: 'Access denied. Administrator privileges required.' });
+    }
+}
 
 async function createTables() {
     const tableCreationQueries = `
@@ -103,6 +146,22 @@ async function createTables() {
             timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             is_read BOOLEAN DEFAULT FALSE
         );
+
+        CREATE TABLE IF NOT EXISTS Skill_Suggestions (
+            suggestion_id SERIAL PRIMARY KEY,
+            suggested_skill_name VARCHAR(100) UNIQUE NOT NULL,
+            suggesting_user_id INT REFERENCES Users(user_id) ON DELETE SET NULL,
+            status VARCHAR(20) DEFAULT 'Pending', -- 'Pending', 'Approved', 'Rejected'
+            timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS session (
+            sid varchar NOT NULL COLLATE "default",
+            sess json NOT NULL,
+            expire timestamp(6) with time zone NOT NULL
+        );
+
+        ALTER TABLE session ADD CONSTRAINT session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE;
         
         CREATE TABLE IF NOT EXISTS Admin_Logs (
             log_id SERIAL PRIMARY KEY,
@@ -224,14 +283,18 @@ app.post('/api/login', async (req, res) => {
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
         if (passwordMatch) {
+            // --- NEW: Create Session and Store User Data ---
+            req.session.user = {
+                id: user.user_id,
+                name: user.user_name,
+                email: user.email,
+                isAdmin: user.is_admin
+            };
+            
+            // Success!
             res.status(200).json({
-                message: 'Login successful.',
-                user: {
-                    id: user.user_id,
-                    name: user.user_name,
-                    email: user.email,
-                    isAdmin: user.is_admin
-                }
+                message: 'Login successful and session created.',
+                user: req.session.user 
             });
         } else {
             res.status(401).json({ message: 'Invalid credentials.' });
@@ -243,8 +306,46 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// POST /api/skills/suggest - User submits a new skill name for review
+app.post('/api/skills/suggest', isAuthenticated, async (req, res) => {
+    // NOTE: This route REQUIRES isAuthenticated middleware.
+    
+    const { skillName, userId } = req.body; 
+
+    if (!skillName || !userId) {
+        return res.status(400).json({ message: 'Skill name and User ID are required.' });
+    }
+
+    try {
+        // Check if the skill already exists in the main Skills table or in suggestions
+        const exists = await pool.query(
+            'SELECT 1 FROM Skills WHERE skill_name ILIKE $1 UNION ALL SELECT 1 FROM Skill_Suggestions WHERE suggested_skill_name ILIKE $1',
+            [skillName]
+        );
+        
+        if (exists.rows.length > 0) {
+            return res.status(409).json({ message: 'This skill is already listed or pending review.' });
+        }
+        
+        // Insert the suggestion into the queue
+        const result = await pool.query(
+            'INSERT INTO Skill_Suggestions (suggested_skill_name, suggesting_user_id) VALUES ($1, $2) RETURNING suggestion_id',
+            [skillName, userId]
+        );
+        
+        res.status(201).json({ 
+            message: 'Skill suggestion submitted for review.', 
+            suggestionId: result.rows[0].suggestion_id
+        });
+
+    } catch (error) {
+        console.error('Skill Suggestion Error:', error.message);
+        res.status(500).json({ message: 'Server error while submitting suggestion.' });
+    }
+});
+
 // POST /api/user/skills/offer - Manages a user's offered skills
-app.post('/api/user/skills/offer', async (req, res) => {
+app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
     // NOTE: This route requires authentication middleware to ensure the user_id is valid.
     
     // Updated destructuring to handle an array of skill objects, 
@@ -301,8 +402,48 @@ app.post('/api/user/skills/offer', async (req, res) => {
     }
 });
 
+// POST /api/skills - Creates a new skill (Admin-only access required)
+app.post('/api/skills', isAdmin, async (req, res) => {
+    // NOTE: This route REQUIRES the isAdmin middleware check.
+    const { skillName } = req.body;
+    
+    if (!skillName) {
+        return res.status(400).json({ message: 'Skill name is required.' });
+    }
+
+    try {
+        // Check if skill already exists to avoid conflict
+        const existingSkill = await pool.query('SELECT skill_id FROM Skills WHERE skill_name ILIKE $1', [skillName]);
+        if (existingSkill.rows.length > 0) {
+            return res.status(409).json({ message: 'This skill already exists.' });
+        }
+        
+        // Insert new skill into the Skills table
+        const result = await pool.query(
+            'INSERT INTO Skills (skill_name) VALUES ($1) RETURNING skill_id, skill_name', 
+            [skillName]
+        );
+        
+        // Log the administrative action (Audit Trail)
+        await pool.query(
+            `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
+             VALUES ($1, $2, 'Skills', $3);`,
+             [req.user.id, 'Create Skill', result.rows[0].skill_id] // Placeholder Admin ID: 1
+        );
+        
+        res.status(201).json({ 
+            message: 'Skill created successfully.', 
+            skill: result.rows[0] 
+        });
+
+    } catch (error) {
+        console.error('Error creating skill:', error.message);
+        res.status(500).json({ message: 'Server error while creating skill.' });
+    }
+});
+
 // PUT /api/skills/:id - Updates an existing skill name (Admin-only access required)
-app.put('/api/skills/:id', async (req, res) => {
+app.put('/api/skills/:id', isAdmin, async (req, res) => {
     // NOTE: Requires admin middleware check.
     const { id } = req.params;
     const { skillName } = req.body;
@@ -333,7 +474,7 @@ app.put('/api/skills/:id', async (req, res) => {
 });
 
 // DELETE /api/skills/:id - Deletes a skill (Admin-only access required)
-app.delete('/api/skills/:id', async (req, res) => {
+app.delete('/api/skills/:id', isAdmin, async (req, res) => {
     // NOTE: Requires admin middleware check.
     const { id } = req.params;
 
@@ -356,7 +497,7 @@ app.delete('/api/skills/:id', async (req, res) => {
 });
 
 // POST /api/user/skills/seek - Manages a user's skills they seek (want to learn)
-app.post('/api/user/skills/seek', async (req, res) => {
+app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
     // NOTE: This route requires authentication middleware to ensure the user_id is valid.
     
     const { userId, skills } = req.body;
@@ -412,7 +553,7 @@ app.post('/api/user/skills/seek', async (req, res) => {
 });
 
 // POST /api/sessions/request - Creates a new session request
-app.post('/api/sessions/request', async (req, res) => {
+app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to ensure user_ids are valid.
     
     const { 
@@ -463,7 +604,7 @@ app.post('/api/sessions/request', async (req, res) => {
 });
 
 // GET /api/sessions/user/:id - Fetches all sessions (as requester or provider) for a specific user
-app.get('/api/sessions/user/:id', async (req, res) => {
+app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to ensure only the logged-in user 
     // or an admin can view this data (i.e., req.user.id === req.params.id).
     
@@ -506,7 +647,7 @@ app.get('/api/sessions/user/:id', async (req, res) => {
 });
 
 // POST /api/sessions/confirm - Confirms a session and sets the meeting URL
-app.post('/api/sessions/confirm', async (req, res) => {
+app.post('/api/sessions/confirm', isAuthenticated, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to ensure only the
     // actual session provider can perform this action.
     
@@ -552,7 +693,7 @@ app.post('/api/sessions/confirm', async (req, res) => {
 });
 
 // POST /api/sessions/deny - Denies a pending request or cancels a confirmed session
-app.post('/api/sessions/deny', async (req, res) => {
+app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to ensure the user making the 
     // change is either the provider, the requester, or an admin.
     
@@ -609,7 +750,7 @@ app.post('/api/sessions/deny', async (req, res) => {
 });
 
 // POST /api/sessions/complete - Marks a confirmed session as complete, enabling rating/feedback
-app.post('/api/sessions/complete', async (req, res) => {
+app.post('/api/sessions/complete', isAuthenticated, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to ensure the user making the 
     // change is either the provider or the requester, and the session status is 'Confirmed'.
     
@@ -649,7 +790,7 @@ app.post('/api/sessions/complete', async (req, res) => {
 });
 
 // POST /api/sessions/rate - Submits a rating (like) and feedback for a completed session
-app.post('/api/sessions/rate', async (req, res) => {
+app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to ensure the rater_id is valid.
     
     const { 
@@ -755,8 +896,114 @@ app.get('/api/user/ratings/:id', async (req, res) => {
     }
 });
 
+// GET /api/admin/suggestions - Fetches all pending skill suggestions (Admin-only)
+app.get('/api/admin/suggestions', isAdmin, async (req, res) => {
+    // NOTE: Requires isAdmin middleware
+    
+    try {
+        const result = await pool.query(
+            `SELECT 
+                s.suggestion_id,
+                s.suggested_skill_name,
+                u.user_name AS suggesting_user,
+                s.status,
+                s.timestamp
+            FROM Skill_Suggestions s
+            LEFT JOIN Users u ON s.suggesting_user_id = u.user_id
+            WHERE s.status = 'Pending'
+            ORDER BY s.timestamp ASC;`
+        );
+
+        res.status(200).json({ 
+            message: 'Pending skill suggestions retrieved successfully.', 
+            suggestions: result.rows 
+        });
+
+    } catch (error) {
+        console.error('Admin Fetch Suggestions Error:', error.message);
+        res.status(500).json({ message: 'Server error retrieving skill suggestions.' });
+    }
+});
+
+// POST /api/admin/suggestions/action - Approves or rejects a skill suggestion (Admin-only)
+app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
+    // NOTE: Requires isAdmin middleware
+    
+    const { suggestionId, action } = req.body; // action: 'approve' or 'reject'
+
+    if (!suggestionId || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: 'Suggestion ID and valid action (approve/reject) are required.' });
+    }
+
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN'); // Start Transaction
+        
+        // 1. Get the skill name from the suggestion table
+        const suggestionResult = await client.query(
+            'SELECT suggested_skill_name FROM Skill_Suggestions WHERE suggestion_id = $1 AND status = $2',
+            [suggestionId, 'Pending']
+        );
+
+        if (suggestionResult.rows.length === 0) {
+            await client.query('COMMIT');
+            return res.status(404).json({ message: 'Suggestion not found or already processed.' });
+        }
+
+        const skillName = suggestionResult.rows[0].suggested_skill_name;
+        let finalMessage = '';
+        let targetId = null;
+
+        if (action === 'approve') {
+            // 2A. APPROVE: Insert the new skill into the master Skills table
+            const newSkill = await client.query(
+                'INSERT INTO Skills (skill_name) VALUES ($1) RETURNING skill_id',
+                [skillName]
+            );
+            targetId = newSkill.rows[0].skill_id;
+            finalMessage = `Skill "${skillName}" approved and added to master list.`;
+        } else {
+            // 2B. REJECT: Only update the suggestion status
+            finalMessage = `Suggestion "${skillName}" rejected.`;
+        }
+
+        // 3. Update the suggestion status
+        await client.query(
+            'UPDATE Skill_Suggestions SET status = $1 WHERE suggestion_id = $2',
+            [action === 'approve' ? 'Approved' : 'Rejected', suggestionId]
+        );
+        
+        // 4. Log the administrative action (Audit Trail)
+        await client.query(
+            `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
+             VALUES ($1, $2, 'Skill_Suggestions', $3);`,
+             [req.user.id, action === 'approve' ? 'Approve Skill' : 'Reject Skill', suggestionId] 
+        );
+
+        await client.query('COMMIT'); // Commit Transaction
+        
+        res.status(200).json({ 
+            message: finalMessage,
+            skillId: targetId
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK'); // Rollback on error
+        console.error(`Error processing skill suggestion (${action}):`, error.message);
+        // Specifically check for unique violation error (e.g., if skill was added by admin manually during review)
+        if (error.code === '23505' && action === 'approve') {
+            return res.status(409).json({ message: 'Error: This skill already exists in the master list.' });
+        }
+        res.status(500).json({ message: 'Server error while processing skill suggestion.' });
+
+    } finally {
+        client.release();
+    }
+});
+
 // GET /api/admin/reports - Fetches all security reports for Admin review
-app.get('/api/admin/reports', async (req, res) => {
+app.get('/api/admin/reports', isAdmin, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to verify the user is an admin.
 
     try {
@@ -791,7 +1038,7 @@ app.get('/api/admin/reports', async (req, res) => {
 });
 
 // POST /api/admin/report/:id/status - Updates the status of a specific report
-app.post('/api/admin/report/:id/status', async (req, res) => {
+app.post('/api/admin/report/:id/status', isAdmin, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware to verify the user is an admin.
     
     const { id } = req.params;
@@ -825,7 +1072,7 @@ app.post('/api/admin/report/:id/status', async (req, res) => {
              VALUES ($1, $2, 'Reports', $3);`,
              // [req.user.id, 'Update Report Status', updatedReport.report_id] 
              // (Requires auth middleware to get admin_id)
-             [1, 'Update Report Status', updatedReport.report_id] // Placeholder Admin ID: 1
+             [req.user.id, 'Update Report Status', updatedReport.report_id] // Placeholder Admin ID: 1
         );
 
         // 4. Success Response
@@ -837,6 +1084,65 @@ app.post('/api/admin/report/:id/status', async (req, res) => {
     } catch (error) {
         console.error('Admin Update Report Status Error:', error.message);
         res.status(500).json({ message: 'Server error while updating report status.' });
+    }
+});
+
+// DELETE /api/admin/users/:id - Deletes a user account and cascades the deletion (Admin-only access required)
+app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
+    // NOTE: This route REQUIRES authentication middleware to verify the user making the 
+    // deletion is an admin, and that the admin cannot delete their OWN account.
+    
+    const { id } = req.params;
+
+    try {
+        // 1. Delete the User from the Users table
+        // Due to ON DELETE CASCADE constraints in the DDL, this single command 
+        // automatically removes all associated rows in:
+        // User_Skills_Offered, User_Skills_Sought, Sessions, Ratings, Reports, Messages, and Admin_Logs.
+        const result = await pool.query(
+            'DELETE FROM Users WHERE user_id = $1 RETURNING user_id, email, user_name',
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'User account not found.' });
+        }
+        
+        const deletedUser = result.rows[0];
+
+        // 2. Log the administrative action (Audit Trail)
+        // Log this action for governance and security documentation.
+        await pool.query(
+            `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
+             VALUES ($1, $2, 'Users', $3);`,
+             // [req.user.id, 'Delete User Account', deletedUser.user_id] // (Requires auth middleware)
+             [req.user.id, 'Delete User Account', deletedUser.user_id] // Placeholder Admin ID: 1
+        );
+
+        // 3. Success Response
+        res.status(200).json({ 
+            message: `User ${deletedUser.user_name} (ID: ${deletedUser.user_id}) and all associated data deleted successfully.`, 
+            deletedUserId: deletedUser.user_id
+        });
+
+    } catch (error) {
+        console.error('Admin User Deletion Error:', error.message);
+        res.status(500).json({ message: 'Server error while deleting user account.' });
+    }
+});
+
+// POST /api/logout - Destroys the current session
+app.post('/api/logout', (req, res) => {
+    if (req.session) {
+        req.session.destroy(err => {
+            if (err) {
+                console.error('Logout error:', err);
+                return res.status(500).json({ message: 'Could not log out, please try again.' });
+            }
+            res.status(200).json({ message: 'Logout successful.' });
+        });
+    } else {
+        res.status(200).json({ message: 'No active session to destroy.' });
     }
 });
 
