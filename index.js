@@ -67,6 +67,7 @@ async function createTables() {
             session_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
             location_type VARCHAR(20) NOT NULL,
             status VARCHAR(20) DEFAULT 'Requested',
+            meeting_url VARCHAR(255),  -- <--- NEW COLUMN
             CONSTRAINT check_self_session CHECK (provider_id <> requester_id) 
         );
         
@@ -382,6 +383,57 @@ app.post('/api/user/skills/seek', async (req, res) => {
         
     } finally {
         client.release();
+    }
+});
+
+// POST /api/sessions/request - Creates a new session request
+app.post('/api/sessions/request', async (req, res) => {
+    // NOTE: This route REQUIRES authentication middleware to ensure user_ids are valid.
+    
+    const { 
+        requesterId, 
+        providerId, 
+        skillTaughtId, 
+        sessionDateTime, 
+        locationType,
+        meetingUrl // <--- Now accepts the optional meetingUrl
+    } = req.body;
+
+    // 1. Input Validation
+    if (!requesterId || !providerId || !skillTaughtId || !sessionDateTime || !locationType) {
+        return res.status(400).json({ message: 'Missing required session details.' });
+    }
+    
+    // Check against the database constraint for self-session (safety check)
+    if (requesterId === providerId) {
+        return res.status(400).json({ message: 'Cannot request a session with yourself.' });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO Sessions (
+                provider_id, 
+                requester_id, 
+                skill_taught_id, 
+                session_date_time, 
+                location_type, 
+                status,
+                meeting_url  -- <--- INSERT the URL (will be null on request)
+            ) VALUES ($1, $2, $3, $4, $5, 'Requested', $6) 
+             RETURNING session_id, status, session_date_time;`,
+            [providerId, requesterId, skillTaughtId, sessionDateTime, locationType, meetingUrl || null]
+        );
+
+        const newSession = result.rows[0];
+
+        res.status(201).json({ 
+            message: 'Session request submitted successfully. Awaiting provider confirmation.', 
+            session: newSession
+        });
+
+    } catch (error) {
+        console.error('Session Request Error:', error.message);
+        res.status(500).json({ message: 'Server error while submitting session request.' });
     }
 });
 
