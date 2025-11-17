@@ -30,7 +30,7 @@ app.use(session({
         pool: pool,                  
         tableName: 'session'         
     }),
-    secret: process.env.SESSION_SECRET || '7_k9RQi_rv[:I{<`iDC+VOJ`{UET$P7}', 
+    secret: process.env.SESSION_SECRET || 'a-long-random-string', 
     resave: false,
     saveUninitialized: false,
     cookie: { 
