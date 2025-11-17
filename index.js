@@ -974,6 +974,34 @@ app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
     }
 });
 
+//gets a list of all users for Admins
+app.get('/api/admin/users', isAdmin, async (req, res) => {
+
+    try {
+        const result = await pool.query(
+            `SELECT 
+                user_id,
+                email,
+                user_name,
+                date_of_birth,
+                grade_level,
+                school_college,
+                is_admin
+            FROM Users
+            ORDER BY user_id ASC;`
+        );
+
+        res.status(200).json({ 
+            message: 'User list retrieved successfully.', 
+            users: result.rows 
+        });
+
+    } catch (error) {
+        console.error('Admin Fetch Users Error:', error.message);
+        res.status(500).json({ message: 'Server error while retrieving user list.' });
+    }
+});
+
 //gets all security reports for Admin review
 app.get('/api/admin/reports', isAdmin, async (req, res) => {
 
