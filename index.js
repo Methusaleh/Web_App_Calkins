@@ -27,14 +27,14 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(session({
     store: new PgSession({
-        pool: pool,                  // Use your existing PostgreSQL connection pool
-        tableName: 'session'         // Name of the table to store session data
+        pool: pool,                  
+        tableName: 'session'         
     }),
-    secret: process.env.SESSION_SECRET || 'a-very-secret-key-for-dev', 
+    secret: process.env.SESSION_SECRET || '7_k9RQi_rv[:I{<`iDC+VOJ`{UET$P7}', 
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000, // this is 30 days in milliseconds hahahaha
         secure: 'auto' 
     }
 }));
@@ -45,27 +45,26 @@ app.use(morgan('combined'));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Authentication Middleware ---
-// 1. Checks if a user is logged in
+//checks if user is logged in
 function isAuthenticated(req, res, next) {
     if (req.session.user) {
-        // User is logged in, attach user object to request and continue
+        //user logged in
         req.user = req.session.user; 
         next();
     } else {
-        // User is not logged in
+        //user not logged in
         res.status(401).json({ message: 'Unauthorized. Please log in.' });
     }
 }
 
-// 2. Checks if the logged-in user is an administrator
+//check for admin rights
 function isAdmin(req, res, next) {
     if (req.session.user && req.session.user.isAdmin) {
-        // User is an admin, attach user object to request and continue
+        //user is an admin
         req.user = req.session.user;
         next();
     } else {
-        // User is not an admin
+        //user is not an admin
         res.status(403).json({ message: 'Access denied. Administrator privileges required.' });
     }
 }
@@ -214,8 +213,6 @@ app.get('/', async (req, res) => {
 app.post('/api/register', async (req, res) => {
     const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege } = req.body;
 
-    // --- MODIFIED VALIDATION CHECK ---
-    // gradeLevel has been removed from the required list.
     if (!email || !password || !userName || !dateOfBirth) { 
         return res.status(400).json({ message: 'Missing required registration fields.' });
     }
@@ -240,7 +237,6 @@ app.post('/api/register', async (req, res) => {
                 is_admin
             ) VALUES ($1, $2, $3, $4, $5, $6, FALSE) 
              RETURNING user_id, user_name, email;`,
-            // gradeLevel is included in the parameter array and will be NULL if not provided.
             [email, hashedPassword, userName, dateOfBirth, gradeLevel || null, schoolCollege || null]
         );
 
@@ -283,7 +279,7 @@ app.post('/api/login', async (req, res) => {
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
         if (passwordMatch) {
-            // --- NEW: Create Session and Store User Data ---
+            //creates session and stores user info in session
             req.session.user = {
                 id: user.user_id,
                 name: user.user_name,
@@ -291,7 +287,6 @@ app.post('/api/login', async (req, res) => {
                 isAdmin: user.is_admin
             };
             
-            // Success!
             res.status(200).json({
                 message: 'Login successful and session created.',
                 user: req.session.user 
@@ -306,9 +301,8 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// POST /api/skills/suggest - User submits a new skill name for review
+//user submits a new skill name for review
 app.post('/api/skills/suggest', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES isAuthenticated middleware.
     
     const { skillName, userId } = req.body; 
 
@@ -317,7 +311,7 @@ app.post('/api/skills/suggest', isAuthenticated, async (req, res) => {
     }
 
     try {
-        // Check if the skill already exists in the main Skills table or in suggestions
+        //need to check if this skill already exists in BOTH Skills and Skill_Suggestions tables
         const exists = await pool.query(
             'SELECT 1 FROM Skills WHERE skill_name ILIKE $1 UNION ALL SELECT 1 FROM Skill_Suggestions WHERE suggested_skill_name ILIKE $1',
             [skillName]
@@ -327,7 +321,7 @@ app.post('/api/skills/suggest', isAuthenticated, async (req, res) => {
             return res.status(409).json({ message: 'This skill is already listed or pending review.' });
         }
         
-        // Insert the suggestion into the queue
+        //insert the suggestion into the table
         const result = await pool.query(
             'INSERT INTO Skill_Suggestions (suggested_skill_name, suggesting_user_id) VALUES ($1, $2) RETURNING suggestion_id',
             [skillName, userId]
@@ -344,12 +338,9 @@ app.post('/api/skills/suggest', isAuthenticated, async (req, res) => {
     }
 });
 
-// POST /api/user/skills/offer - Manages a user's offered skills
+//edits a user's offered skills
 app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
-    // NOTE: This route requires authentication middleware to ensure the user_id is valid.
     
-    // Updated destructuring to handle an array of skill objects, 
-    // where each object contains skillId, isVirtualOnly, and isInPersonOnly.
     const { userId, skills } = req.body; 
     
     if (!userId || !Array.isArray(skills)) {
@@ -361,16 +352,15 @@ app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
     try {
         await client.query('BEGIN'); // Start Transaction
         
-        // 1. DELETE existing offered skills for this user
+        //delete existing list
         await client.query('DELETE FROM User_Skills_Offered WHERE user_id = $1', [userId]);
         
-        // 2. INSERT the new list of offered skills with location preferences
+        //insert new list of skills offered
         if (skills.length > 0) {
             const insertQueries = skills.map(skill => {
-                // Ensure skillId is present
                 if (!skill.skillId) return null; 
 
-                // Use the provided location booleans, defaulting to FALSE if not specified
+                //locationType booleans
                 const isVirtual = skill.isVirtualOnly || false;
                 const isInPerson = skill.isInPersonOnly || false;
                 
@@ -380,7 +370,7 @@ app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
                      VALUES ($1, $2, $3, $4)`,
                     [userId, skill.skillId, isVirtual, isInPerson]
                 );
-            }).filter(q => q !== null); // Filter out any null queries
+            }).filter(q => q !== null); //filter out any queries that are null
             
             await Promise.all(insertQueries);
         }
@@ -393,7 +383,7 @@ app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
         });
         
     } catch (error) {
-        await client.query('ROLLBACK'); // Rollback on error
+        await client.query('ROLLBACK'); //rollback on error
         console.error('Error updating offered skills with location data:', error.message);
         res.status(500).json({ message: 'Server error while updating skills.' });
         
@@ -402,9 +392,8 @@ app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
     }
 });
 
-// POST /api/skills - Creates a new skill (Admin-only access required)
+//creates a new skill (Admin-only)
 app.post('/api/skills', isAdmin, async (req, res) => {
-    // NOTE: This route REQUIRES the isAdmin middleware check.
     const { skillName } = req.body;
     
     if (!skillName) {
@@ -412,23 +401,23 @@ app.post('/api/skills', isAdmin, async (req, res) => {
     }
 
     try {
-        // Check if skill already exists to avoid conflict
+        //check for skill existence
         const existingSkill = await pool.query('SELECT skill_id FROM Skills WHERE skill_name ILIKE $1', [skillName]);
         if (existingSkill.rows.length > 0) {
             return res.status(409).json({ message: 'This skill already exists.' });
         }
         
-        // Insert new skill into the Skills table
+        //insert new skill into the Skills table
         const result = await pool.query(
             'INSERT INTO Skills (skill_name) VALUES ($1) RETURNING skill_id, skill_name', 
             [skillName]
         );
         
-        // Log the administrative action (Audit Trail)
+        //log admin action
         await pool.query(
             `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
              VALUES ($1, $2, 'Skills', $3);`,
-             [req.user.id, 'Create Skill', result.rows[0].skill_id] // Placeholder Admin ID: 1
+             [req.user.id, 'Create Skill', result.rows[0].skill_id]
         );
         
         res.status(201).json({ 
@@ -442,9 +431,8 @@ app.post('/api/skills', isAdmin, async (req, res) => {
     }
 });
 
-// PUT /api/skills/:id - Updates an existing skill name (Admin-only access required)
+//updates an existing skill name (Admin-only)
 app.put('/api/skills/:id', isAdmin, async (req, res) => {
-    // NOTE: Requires admin middleware check.
     const { id } = req.params;
     const { skillName } = req.body;
 
@@ -473,9 +461,8 @@ app.put('/api/skills/:id', isAdmin, async (req, res) => {
     }
 });
 
-// DELETE /api/skills/:id - Deletes a skill (Admin-only access required)
+//deletes a skill (Admin-only)
 app.delete('/api/skills/:id', isAdmin, async (req, res) => {
-    // NOTE: Requires admin middleware check.
     const { id } = req.params;
 
     try {
@@ -496,9 +483,8 @@ app.delete('/api/skills/:id', isAdmin, async (req, res) => {
     }
 });
 
-// POST /api/user/skills/seek - Manages a user's skills they seek (want to learn)
+//edits a user's sought skills
 app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
-    // NOTE: This route requires authentication middleware to ensure the user_id is valid.
     
     const { userId, skills } = req.body;
     
@@ -511,16 +497,14 @@ app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
     try {
         await client.query('BEGIN'); // Start Transaction
         
-        // 1. DELETE existing sought skills for this user from the junction table
+        //delete existing  list
         await client.query('DELETE FROM User_Skills_Sought WHERE user_id = $1', [userId]);
         
-        // 2. INSERT the new list of sought skills with location preferences
+        //insert new list
         if (skills.length > 0) {
             const insertQueries = skills.map(skill => {
-                // Ensure skillId is present
                 if (!skill.skillId) return null; 
 
-                // Use the provided location booleans, defaulting to FALSE if not specified
                 const isVirtual = skill.isVirtualOnly || false;
                 const isInPerson = skill.isInPersonOnly || false;
                 
@@ -530,7 +514,7 @@ app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
                      VALUES ($1, $2, $3, $4)`,
                     [userId, skill.skillId, isVirtual, isInPerson]
                 );
-            }).filter(q => q !== null); // Filter out any null queries
+            }).filter(q => q !== null); //filter out queries that are null
             
             await Promise.all(insertQueries);
         }
@@ -543,7 +527,7 @@ app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
         });
         
     } catch (error) {
-        await client.query('ROLLBACK'); // Rollback on error
+        await client.query('ROLLBACK'); //rollback on error
         console.error('Error updating sought skills with location data:', error.message);
         res.status(500).json({ message: 'Server error while updating skills.' });
         
@@ -552,9 +536,8 @@ app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
     }
 });
 
-// POST /api/sessions/request - Creates a new session request
+//creates a new session request
 app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to ensure user_ids are valid.
     
     const { 
         requesterId, 
@@ -562,15 +545,15 @@ app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
         skillTaughtId, 
         sessionDateTime, 
         locationType,
-        meetingUrl // <--- Now accepts the optional meetingUrl
+        meetingUrl 
     } = req.body;
 
-    // 1. Input Validation
+    //validation
     if (!requesterId || !providerId || !skillTaughtId || !sessionDateTime || !locationType) {
         return res.status(400).json({ message: 'Missing required session details.' });
     }
     
-    // Check against the database constraint for self-session (safety check)
+    // make sure requester and provider are not the same
     if (requesterId === providerId) {
         return res.status(400).json({ message: 'Cannot request a session with yourself.' });
     }
@@ -603,19 +586,12 @@ app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
     }
 });
 
-// GET /api/sessions/user/:id - Fetches all sessions (as requester or provider) for a specific user
+//gets all sessions (as requester or provider) for a specific user
 app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to ensure only the logged-in user 
-    // or an admin can view this data (i.e., req.user.id === req.params.id).
     
     const { id } = req.params;
 
     try {
-        // SQL Query to fetch sessions:
-        // 1. SELECTs data from the Sessions table.
-        // 2. Uses JOINs to pull in the provider's name (p_name), requester's name (r_name),
-        //    and the skill name (s_name).
-        // 3. Filters results to include only sessions where the user is either the requester OR the provider.
         const result = await pool.query(
             `SELECT 
                 s.session_id,
@@ -646,41 +622,53 @@ app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
     }
 });
 
-// POST /api/sessions/confirm - Confirms a session and sets the meeting URL
+//confirms a session and sets the meeting URL
 app.post('/api/sessions/confirm', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to ensure only the
-    // actual session provider can perform this action.
     
     const { sessionId, meetingUrl } = req.body;
+    const authenticatedUserId = req.user.id;
 
-    // 1. Validation
+    //validation
     if (!sessionId) {
         return res.status(400).json({ message: 'Session ID is required for confirmation.' });
     }
-    
-    // Check if the location is online and if a URL is provided
-    // This logic is simplified; a real check would verify the session location_type first.
-    if (meetingUrl && meetingUrl.length > 255) {
-        return res.status(400).json({ message: 'Meeting URL is too long.' });
-    }
 
     try {
-        // 2. Update the Sessions table
+        const sessionCheck = await pool.query(
+            'SELECT location_type FROM Sessions WHERE session_id = $1',
+            [sessionId]
+        );
+        
+        if (sessionCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Session not found.' });
+        }
+    
+        const locationType = sessionCheck.rows[0].location_type;
+
+        if (locationType === 'Online' && !meetingUrl) {
+        return res.status(400).json({ message: 'Meeting URL is required for online sessions.' });
+        }
+    
+        if (meetingUrl && meetingUrl.length > 255) {
+        return res.status(400).json({ message: 'Meeting URL is too long.' });
+        }
+
+        //update the Sessions table
         const result = await pool.query(
             `UPDATE Sessions
              SET status = 'Confirmed',
                  meeting_url = $1
              WHERE session_id = $2
-             -- Optional: Add WHERE provider_id = [userId] (Requires auth middleware)
+                AND provider_id = $3
+                AND status = 'Requested'
              RETURNING session_id, status, meeting_url;`,
-            [meetingUrl || null, sessionId]
+            [meetingUrl || null, sessionId, authenticatedUserId]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Session not found or not available for confirmation.' });
+            return res.status(403).json({ message: 'Permission denied. Session not found, not pending, or you are not the provider.' });
         }
 
-        // 3. Success Response
         res.status(200).json({ 
             message: 'Session confirmed and meeting URL set.', 
             session: result.rows[0] 
@@ -692,10 +680,8 @@ app.post('/api/sessions/confirm', isAuthenticated, async (req, res) => {
     }
 });
 
-// POST /api/sessions/deny - Denies a pending request or cancels a confirmed session
+//Denies a pending request or cancels a confirmed session
 app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to ensure the user making the 
-    // change is either the provider, the requester, or an admin.
     
     const { sessionId, reason } = req.body;
     
@@ -704,7 +690,7 @@ app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
     }
 
     try {
-        // 1. First, retrieve the current session status
+        //current session status
         const currentSession = await pool.query(
             'SELECT status, provider_id, requester_id FROM Sessions WHERE session_id = $1',
             [sessionId]
@@ -717,17 +703,17 @@ app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
         const currentStatus = currentSession.rows[0].status;
         let newStatus;
 
-        // 2. Determine the new status based on the current state (Business Logic)
+        //change status based on current status
         if (currentStatus === 'Requested') {
-            newStatus = 'Denied'; // Provider is denying a new request
+            newStatus = 'Denied'; //deny
         } else if (currentStatus === 'Confirmed') {
-            newStatus = 'Cancelled'; // Either party is canceling an agreed session
+            newStatus = 'Cancelled'; //cancel
         } else {
-            // Prevent changing status of Completed or already Denied/Cancelled sessions
+            //stops status from changing if it's already deny, cancel, or complete
             return res.status(400).json({ message: `Cannot change status from ${currentStatus}.` });
         }
 
-        // 3. Update the Sessions table
+        //update table
         const result = await pool.query(
             `UPDATE Sessions
              SET status = $1,
@@ -737,7 +723,6 @@ app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
             [newStatus, reason || 'No reason provided', sessionId]
         );
 
-        // 4. Success Response
         res.status(200).json({ 
             message: `Session status updated to ${newStatus}.`, 
             session: result.rows[0] 
@@ -749,10 +734,8 @@ app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
     }
 });
 
-// POST /api/sessions/complete - Marks a confirmed session as complete, enabling rating/feedback
+//marks session as complete, makes it ready for rating
 app.post('/api/sessions/complete', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to ensure the user making the 
-    // change is either the provider or the requester, and the session status is 'Confirmed'.
     
     const { sessionId } = req.body;
     
@@ -761,7 +744,7 @@ app.post('/api/sessions/complete', isAuthenticated, async (req, res) => {
     }
 
     try {
-        // 1. Update the Sessions table status to 'Completed'
+        //set status to complete if currently confirmed
         const result = await pool.query(
             `UPDATE Sessions
              SET status = 'Completed'
@@ -771,11 +754,10 @@ app.post('/api/sessions/complete', isAuthenticated, async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            // Fails if ID is wrong OR if the status wasn't 'Confirmed'
+            //error if wrong session ID or not confirmed
             return res.status(400).json({ message: 'Session not found or cannot be completed (must be confirmed first).' });
         }
 
-        // 2. Success Response
         // This success response is what the frontend (EJS client-side JS) should listen for 
         // to then redirect the user to the rating/feedback form.
         res.status(200).json({ 
@@ -789,9 +771,8 @@ app.post('/api/sessions/complete', isAuthenticated, async (req, res) => {
     }
 });
 
-// POST /api/sessions/rate - Submits a rating (like) and feedback for a completed session
+//posts a rating and feedback (optional)
 app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to ensure the rater_id is valid.
     
     const { 
         sessionId, 
@@ -801,18 +782,18 @@ app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
         feedbackText 
     } = req.body;
     
-    // 1. Validation for minimum data
+    //validation
     if (!sessionId || !raterId || !rateeId || likeStatus === undefined) {
         return res.status(400).json({ message: 'Missing required rating fields (Session, Rater, Ratee, Like Status).' });
     }
 
-    // Double check database constraint (rater cannot be the ratee)
+    //can't rate yourself
     if (raterId === rateeId) {
         return res.status(400).json({ message: 'A user cannot rate themselves.' });
     }
 
     try {
-        // 2. First, verify the session status (must be 'Completed')
+        //make sure session status is complete
         const sessionCheck = await pool.query(
             'SELECT status FROM Sessions WHERE session_id = $1',
             [sessionId]
@@ -826,7 +807,7 @@ app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
             return res.status(403).json({ message: 'Cannot rate a session unless it is marked as Completed.' });
         }
         
-        // 3. Insert the new rating into the Ratings table
+        //insert for rating and feedback
         const result = await pool.query(
             `INSERT INTO Ratings (
                 session_id, 
@@ -839,15 +820,13 @@ app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
             [sessionId, raterId, rateeId, likeStatus, feedbackText || null]
         );
 
-        // 4. Success Response
         res.status(201).json({ 
             message: 'Rating and feedback submitted successfully.', 
             rating: result.rows[0] 
         });
 
     } catch (error) {
-        // This handles the case where the user tries to rate the same session twice 
-        // (due to the session_id UNIQUE constraint in the Ratings table).
+        //this is so you don't rate something twice
         if (error.code === '23505') { 
             return res.status(409).json({ message: 'This session has already been rated.' });
         }
@@ -857,17 +836,12 @@ app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
     }
 });
 
-// GET /api/user/ratings/:id - Fetches aggregated rating data for a specific user
+//gets rating data for a specific user
 app.get('/api/user/ratings/:id', async (req, res) => {
-    // NOTE: This route should typically be public, as profile ratings are visible to all.
     
     const { id } = req.params;
 
     try {
-        // SQL Query to aggregate ratings:
-        // 1. Filters the Ratings table to only include ratings where the user is the 'ratee'.
-        // 2. Uses SUM to count how many times 'like_status' was TRUE (a "like").
-        // 3. Uses COUNT(*) to get the total number of ratings received.
         const result = await pool.query(
             `SELECT 
                 COUNT(r.rating_id) AS total_ratings_received,
@@ -879,7 +853,7 @@ app.get('/api/user/ratings/:id', async (req, res) => {
 
         const ratingSummary = result.rows[0];
 
-        // Ensure we return 0 for both if the user has no ratings
+        // had to add this to make sure 0 is returned instead of null
         if (!ratingSummary.total_ratings_received) {
              ratingSummary.total_ratings_received = 0;
              ratingSummary.total_likes = 0;
@@ -896,9 +870,8 @@ app.get('/api/user/ratings/:id', async (req, res) => {
     }
 });
 
-// GET /api/admin/suggestions - Fetches all pending skill suggestions (Admin-only)
+//gets all pending skill suggestions (Admin-only)
 app.get('/api/admin/suggestions', isAdmin, async (req, res) => {
-    // NOTE: Requires isAdmin middleware
     
     try {
         const result = await pool.query(
@@ -925,11 +898,10 @@ app.get('/api/admin/suggestions', isAdmin, async (req, res) => {
     }
 });
 
-// POST /api/admin/suggestions/action - Approves or rejects a skill suggestion (Admin-only)
+//approves or rejects a skill suggestion (Admin-only)
 app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
-    // NOTE: Requires isAdmin middleware
     
-    const { suggestionId, action } = req.body; // action: 'approve' or 'reject'
+    const { suggestionId, action } = req.body;
 
     if (!suggestionId || !['approve', 'reject'].includes(action)) {
         return res.status(400).json({ message: 'Suggestion ID and valid action (approve/reject) are required.' });
@@ -940,7 +912,7 @@ app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
     try {
         await client.query('BEGIN'); // Start Transaction
         
-        // 1. Get the skill name from the suggestion table
+        //get list of pending suggestions
         const suggestionResult = await client.query(
             'SELECT suggested_skill_name FROM Skill_Suggestions WHERE suggestion_id = $1 AND status = $2',
             [suggestionId, 'Pending']
@@ -956,7 +928,7 @@ app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
         let targetId = null;
 
         if (action === 'approve') {
-            // 2A. APPROVE: Insert the new skill into the master Skills table
+            //approve and move skill into Skill table
             const newSkill = await client.query(
                 'INSERT INTO Skills (skill_name) VALUES ($1) RETURNING skill_id',
                 [skillName]
@@ -964,17 +936,17 @@ app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
             targetId = newSkill.rows[0].skill_id;
             finalMessage = `Skill "${skillName}" approved and added to master list.`;
         } else {
-            // 2B. REJECT: Only update the suggestion status
+            //reject suggestion
             finalMessage = `Suggestion "${skillName}" rejected.`;
         }
 
-        // 3. Update the suggestion status
+        //update suggestion status
         await client.query(
             'UPDATE Skill_Suggestions SET status = $1 WHERE suggestion_id = $2',
             [action === 'approve' ? 'Approved' : 'Rejected', suggestionId]
         );
         
-        // 4. Log the administrative action (Audit Trail)
+        //log admin action
         await client.query(
             `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
              VALUES ($1, $2, 'Skill_Suggestions', $3);`,
@@ -989,9 +961,9 @@ app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
         });
 
     } catch (error) {
-        await client.query('ROLLBACK'); // Rollback on error
+        await client.query('ROLLBACK'); //rollback on error
         console.error(`Error processing skill suggestion (${action}):`, error.message);
-        // Specifically check for unique violation error (e.g., if skill was added by admin manually during review)
+        //this is if admin adds skill while approving suggestion
         if (error.code === '23505' && action === 'approve') {
             return res.status(409).json({ message: 'Error: This skill already exists in the master list.' });
         }
@@ -1002,15 +974,10 @@ app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
     }
 });
 
-// GET /api/admin/reports - Fetches all security reports for Admin review
+//gets all security reports for Admin review
 app.get('/api/admin/reports', isAdmin, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to verify the user is an admin.
 
     try {
-        // SQL Query to fetch all reports:
-        // 1. SELECTs data from the Reports table.
-        // 2. Uses JOINs to pull the names of the reporter and the reported user.
-        // 3. Orders by timestamp so the newest reports appear first.
         const result = await pool.query(
             `SELECT 
                 r.report_id,
@@ -1037,20 +1004,19 @@ app.get('/api/admin/reports', isAdmin, async (req, res) => {
     }
 });
 
-// POST /api/admin/report/:id/status - Updates the status of a specific report
+//updates the status of a specific report(Admin-only)
 app.post('/api/admin/report/:id/status', isAdmin, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to verify the user is an admin.
     
     const { id } = req.params;
-    const { newStatus } = req.body; // e.g., 'Under Review', 'Action Taken', 'Closed'
+    const { newStatus } = req.body; //'Under Review', 'Action Taken', 'Closed'
 
-    // 1. Validation
+    //validation
     if (!newStatus) {
         return res.status(400).json({ message: 'New status is required.' });
     }
 
     try {
-        // 2. Update the Reports table
+        //update the Reports table
         const result = await pool.query(
             `UPDATE Reports
              SET report_status = $1
@@ -1065,17 +1031,13 @@ app.post('/api/admin/report/:id/status', isAdmin, async (req, res) => {
         
         const updatedReport = result.rows[0];
         
-        // 3. Optional: Log the administrative action (Audit Trail)
-        // This demonstrates the use of the Admin_Logs table for a high technical score.
+        //log the admin action
         await pool.query(
             `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
              VALUES ($1, $2, 'Reports', $3);`,
-             // [req.user.id, 'Update Report Status', updatedReport.report_id] 
-             // (Requires auth middleware to get admin_id)
-             [req.user.id, 'Update Report Status', updatedReport.report_id] // Placeholder Admin ID: 1
+             [req.user.id, 'Update Report Status', updatedReport.report_id]
         );
 
-        // 4. Success Response
         res.status(200).json({ 
             message: `Report ${updatedReport.report_id} status updated to ${updatedReport.report_status}.`, 
             report: updatedReport
@@ -1087,18 +1049,13 @@ app.post('/api/admin/report/:id/status', isAdmin, async (req, res) => {
     }
 });
 
-// DELETE /api/admin/users/:id - Deletes a user account and cascades the deletion (Admin-only access required)
+//deletes a user account and cascades the deletion (Admin-only)
 app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware to verify the user making the 
-    // deletion is an admin, and that the admin cannot delete their OWN account.
     
     const { id } = req.params;
 
     try {
-        // 1. Delete the User from the Users table
-        // Due to ON DELETE CASCADE constraints in the DDL, this single command 
-        // automatically removes all associated rows in:
-        // User_Skills_Offered, User_Skills_Sought, Sessions, Ratings, Reports, Messages, and Admin_Logs.
+        //delete user
         const result = await pool.query(
             'DELETE FROM Users WHERE user_id = $1 RETURNING user_id, email, user_name',
             [id]
@@ -1110,16 +1067,13 @@ app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
         
         const deletedUser = result.rows[0];
 
-        // 2. Log the administrative action (Audit Trail)
-        // Log this action for governance and security documentation.
+        //log admin action
         await pool.query(
             `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
              VALUES ($1, $2, 'Users', $3);`,
-             // [req.user.id, 'Delete User Account', deletedUser.user_id] // (Requires auth middleware)
-             [req.user.id, 'Delete User Account', deletedUser.user_id] // Placeholder Admin ID: 1
+             [req.user.id, 'Delete User Account', deletedUser.user_id]
         );
 
-        // 3. Success Response
         res.status(200).json({ 
             message: `User ${deletedUser.user_name} (ID: ${deletedUser.user_id}) and all associated data deleted successfully.`, 
             deletedUserId: deletedUser.user_id
@@ -1131,7 +1085,7 @@ app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
     }
 });
 
-// POST /api/logout - Destroys the current session
+//destroys the current session
 app.post('/api/logout', (req, res) => {
     if (req.session) {
         req.session.destroy(err => {
