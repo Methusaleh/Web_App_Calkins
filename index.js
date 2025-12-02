@@ -187,7 +187,8 @@ app.get('/', async (req, res) => {
     let dbStatus = 'Failed';
     let tablesStatus = 'Failed';
 
-    const tablesReady = await createTables(); 
+    const tablesReady = await createTables();
+    const user = req.session.user || null; 
 
     if (tablesReady) {
         tablesStatus = 'Ready';
@@ -207,6 +208,7 @@ app.get('/', async (req, res) => {
         dbStatus: dbStatus,
         dbVersion: dbVersion,
         tablesStatus: tablesStatus,
+        user: user,
     });
 });
 
