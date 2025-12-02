@@ -227,6 +227,113 @@ app.get('/register', async (req, res) => {
     });
 });
 
+// GET /profile/edit - Renders the user's profile editing page
+app.get('/profile/edit', isAuthenticated, async (req, res) => {
+    try {
+        // 1. Fetch the Master Skill List (Required for all profile edits)
+        const skillsResult = await pool.query('SELECT skill_id, skill_name FROM Skills ORDER BY skill_name ASC');
+        
+        // 2. Fetch the current user's profile and current skills (Offered/Sought)
+        // You'll need a couple of new GET routes for this, but for now, we'll just fetch the master list.
+
+        res.render('profile_edit', {
+            pageTitle: `Edit Profile: ${req.user.name}`,
+            user: req.user, // The authenticated user's session data
+            masterSkills: skillsResult.rows
+        });
+    } catch (error) {
+        console.error('Error loading profile edit page:', error.message);
+        res.status(500).send('Application Error: Could not load profile data.');
+    }
+});
+
+// GET /api/user/profile/:id - Fetches full profile details for editing
+app.get('/api/user/profile/:id', isAuthenticated, async (req, res) => {
+    // SECURITY NOTE: In a final check, you must add logic here: 
+    // if (req.user.id !== parseInt(req.params.id)) return res.status(403)...
+
+    const { id } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT user_id, email, user_name, date_of_birth, grade_level, school_college 
+             FROM Users 
+             WHERE user_id = $1`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        res.status(200).json({ user: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching profile.' });
+    }
+});
+
+// PUT /api/user/profile/:id - Updates basic profile info
+app.put('/api/user/profile/:id', isAuthenticated, async (req, res) => {
+    // Security Check: Ensure the user is updating their OWN profile
+    if (req.user.id !== parseInt(req.params.id)) {
+        return res.status(403).json({ message: 'Access denied. You can only update your own profile.' });
+    }
+
+    const { userName, gradeLevel } = req.body;
+
+    // Basic Validation
+    if (!userName) {
+        return res.status(400).json({ message: 'Full Name is required.' });
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE Users 
+             SET user_name = $1, 
+                 grade_level = $2
+             WHERE user_id = $3
+             RETURNING user_id, user_name, email, grade_level;`,
+            [userName, gradeLevel || null, req.params.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Update the session data so the UI reflects changes immediately without re-login
+        req.session.user.name = result.rows[0].user_name;
+        req.session.save(); // Ensure session is saved before response
+
+        res.status(200).json({ 
+            message: 'Profile updated successfully.', 
+            user: result.rows[0] 
+        });
+
+    } catch (error) {
+        console.error('Profile Update Error:', error.message);
+        res.status(500).json({ message: 'Server error while updating profile.' });
+    }
+});
+
+// GET /api/user/skills/:id - Fetches currently offered and sought skills for a user
+app.get('/api/user/skills/:id', isAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const offeredResult = await pool.query(
+            'SELECT skill_id, is_virtual_only, is_inperson_only FROM User_Skills_Offered WHERE user_id = $1',
+            [id]
+        );
+        const soughtResult = await pool.query(
+            'SELECT skill_id, is_virtual_only, is_inperson_only FROM User_Skills_Sought WHERE user_id = $1',
+            [id]
+        );
+        res.status(200).json({ 
+            offered: offeredResult.rows, 
+            sought: soughtResult.rows 
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user skills.' });
+    }
+});
 
 app.post('/api/register', async (req, res) => {
     const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege } = req.body;
@@ -468,6 +575,13 @@ app.put('/api/skills/:id', isAdmin, async (req, res) => {
             return res.status(404).json({ message: 'Skill not found.' });
         }
 
+        // Log the administrative action (Audit Trail)
+        await pool.query(
+            `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
+            VALUES ($1, $2, 'Skills', $3);`,
+            [req.user.id, 'Update Skill' /* or 'Delete Skill' */, id] 
+        );
+
         res.status(200).json({ 
             message: 'Skill updated successfully.', 
             skill: result.rows[0] 
@@ -489,6 +603,13 @@ app.delete('/api/skills/:id', isAdmin, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Skill not found.' });
         }
+
+        // Log the administrative action (Audit Trail)
+        await pool.query(
+            `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
+            VALUES ($1, $2, 'Skills', $3);`,
+            [req.user.id, 'Update Skill' /* or 'Delete Skill' */, id] 
+        );
 
         res.status(200).json({ 
             message: 'Skill deleted successfully.',

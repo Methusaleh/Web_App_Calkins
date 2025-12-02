@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= pageTitle %></title>
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+    <main>
+        <h1>Edit Profile for <%= user.name %></h1>
+
+        <form id="profileForm">
+            <h2>Personal Information</h2>
+            <label for="userName">Full Name:</label>
+            <input type="text" id="userName" value="<%= user.name %>" required>
+
+            <label for="gradeLevel">Grade Level:</label>
+            <input type="text" id="gradeLevel" value="<%= user.gradeLevel || '' %>">
+
+            <button type="submit">Update Profile</button>
+        </form>
+
+        <hr>
+
+        <form id="skillOfferForm">
+            <h2>Skills You Offer</h2>
+            <p>Check the skills you want to teach, and select where you can teach them.</p>
+
+            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Offer?</th>
+                            <th style="text-align: left;">Skill Name</th>
+                            <th style="text-align: center;">I can teach<br>Virtual</th>
+                            <th style="text-align: center;">I can teach<br>In-Person</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% masterSkills.forEach(skill => { %>
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td>
+                                    <input type="checkbox" 
+                                        class="skill-toggle" 
+                                        data-id="<%= skill.skill_id %>"
+                                        id="skill_<%= skill.skill_id %>">
+                                </td>
+                                
+                                <td>
+                                    <label for="skill_<%= skill.skill_id %>"><%= skill.skill_name %></label>
+                                </td>
+
+                                <td style="text-align: center;">
+                                    <input type="checkbox" 
+                                        class="loc-virtual" 
+                                        data-id="<%= skill.skill_id %>">
+                                </td>
+                                <td style="text-align: center;">
+                                    <input type="checkbox" 
+                                        class="loc-inperson" 
+                                        data-id="<%= skill.skill_id %>">
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            
+            <p style="font-size: 0.9em; color: #666;">
+                * If you check both Virtual and In-Person, you will appear in searches for both.
+            </p>
+
+            <button type="submit" style="margin-top: 15px;">Save Offered Skills</button>
+        </form>
+
+        <hr>
+
+        <form id="skillSeekForm">
+            <h2>Skills You Want to Learn</h2>
+            <p>Check the skills you want to learn, and select your preferred setting.</p>
+
+            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Seek?</th>
+                            <th style="text-align: left;">Skill Name</th>
+                            <th style="text-align: center;">Prefer<br>Virtual</th>
+                            <th style="text-align: center;">Prefer<br>In-Person</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% masterSkills.forEach(skill => { %>
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td>
+                                    <input type="checkbox" 
+                                        class="seek-toggle" 
+                                        data-id="<%= skill.skill_id %>"
+                                        id="seek_skill_<%= skill.skill_id %>">
+                                </td>
+                                
+                                <td>
+                                    <label for="seek_skill_<%= skill.skill_id %>"><%= skill.skill_name %></label>
+                                </td>
+
+                                <td style="text-align: center;">
+                                    <input type="checkbox" 
+                                        class="seek-virtual" 
+                                        data-id="<%= skill.skill_id %>">
+                                </td>
+                                <td style="text-align: center;">
+                                    <input type="checkbox" 
+                                        class="seek-inperson" 
+                                        data-id="<%= skill.skill_id %>">
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            
+            <button type="submit" style="margin-top: 15px;">Save Sought Skills</button>
+        </form>
+
+        <hr>
+        
+        <h2>Missing a Skill?</h2>
+        <form id="suggestSkillForm">
+            <input type="text" id="newSkillName" placeholder="e.g., Quantum Physics Tutoring">
+            <button type="submit">Suggest Skill</button>
+        </form>
+        
+        <p id="messageArea" style="margin-top: 15px;"></p>
+        
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // --- Client-Side JavaScript Logic ---
+        
+        const userId = '<%= user.id %>'; // Pass the user's ID for API submissions
+
+        // 1. Logic for Saving Skills Offered (POST /api/user/skills/offer)
+        document.getElementById('skillOfferForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const skillsToSubmit = [];
+            
+            // Iterate over all the "Master" checkboxes (the ones that enable the skill)
+            const skillCheckboxes = document.querySelectorAll('.skill-toggle');
+
+            skillCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    const id = checkbox.getAttribute('data-id');
+                    
+                    // Find the corresponding location checkboxes for this skill ID
+                    // We use the data-id attribute to match them up
+                    const canDoVirtual = document.querySelector(`.loc-virtual[data-id="${id}"]`).checked;
+                    const canDoInPerson = document.querySelector(`.loc-inperson[data-id="${id}"]`).checked;
+
+                    // VALIDATION: User must select at least one location if they offer the skill
+                    if (!canDoVirtual && !canDoInPerson) {
+                        // Default to BOTH if they forgot to check one, or handle as error. 
+                        // Let's assume flexibility (both false means flexible in your DB logic? 
+                        // NO, your DB logic uses 'is_virtual_only'. 
+                        // Let's translate strictly.)
+                    }
+
+                    // TRANSLATION LOGIC (UI -> DB Schema)
+                    // DB Column: is_virtual_only (TRUE means they CANNOT do in-person)
+                    // DB Column: is_inperson_only (TRUE means they CANNOT do virtual)
+                    
+                    let isVirtualOnly = false;
+                    let isInPersonOnly = false;
+
+                    if (canDoVirtual && !canDoInPerson) {
+                        isVirtualOnly = true;
+                    } else if (!canDoVirtual && canDoInPerson) {
+                        isInPersonOnly = true;
+                    } 
+                    // If both are checked, both flags remain FALSE (meaning no restriction).
+
+                    skillsToSubmit.push({
+                        skillId: id,
+                        isVirtualOnly: isVirtualOnly,
+                        isInPersonOnly: isInPersonOnly
+                    });
+                }
+            });
+
+            try {
+                const response = await axios.post('/api/user/skills/offer', {
+                    userId: userId, // Defined globally in your previous script block
+                    skills: skillsToSubmit
+                });
+                
+                const msgArea = document.getElementById('messageArea');
+                msgArea.textContent = response.data.message;
+                msgArea.style.color = 'green';
+                
+            } catch (error) {
+                const msgArea = document.getElementById('messageArea');
+                msgArea.textContent = 'Failed to save skills. Please try again.';
+                msgArea.style.color = 'red';
+                console.error(error);
+            }
+        });
+
+        // 2. Logic for Saving Skills Sought (POST /api/user/skills/seek)
+        document.getElementById('skillSeekForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const skillsToSubmit = [];
+            
+            // Iterate over the "Seek" toggle checkboxes
+            const skillCheckboxes = document.querySelectorAll('.seek-toggle');
+
+            skillCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    const id = checkbox.getAttribute('data-id');
+                    
+                    // Find corresponding location prefs using the data-id
+                    const wantVirtual = document.querySelector(`.seek-virtual[data-id="${id}"]`).checked;
+                    const wantInPerson = document.querySelector(`.seek-inperson[data-id="${id}"]`).checked;
+
+                    // TRANSLATION LOGIC (UI -> DB Schema)
+                    // is_virtual_only = TRUE (I ONLY want virtual)
+                    // is_inperson_only = TRUE (I ONLY want in-person)
+                    
+                    let isVirtualOnly = false;
+                    let isInPersonOnly = false;
+
+                    if (wantVirtual && !wantInPerson) {
+                        isVirtualOnly = true;
+                    } else if (!wantVirtual && wantInPerson) {
+                        isInPersonOnly = true;
+                    } 
+                    // If both are checked (or neither), we assume flexibility (both flags false)
+
+                    skillsToSubmit.push({
+                        skillId: id,
+                        isVirtualOnly: isVirtualOnly,
+                        isInPersonOnly: isInPersonOnly
+                    });
+                }
+            });
+
+            try {
+                const response = await axios.post('/api/user/skills/seek', {
+                    userId: userId, // Uses the global userId defined earlier
+                    skills: skillsToSubmit
+                });
+                
+                const msgArea = document.getElementById('messageArea');
+                msgArea.textContent = response.data.message;
+                msgArea.style.color = 'green';
+                
+            } catch (error) {
+                const msgArea = document.getElementById('messageArea');
+                msgArea.textContent = 'Failed to save sought skills. Please try again.';
+                msgArea.style.color = 'red';
+                console.error(error);
+            }
+        });
+        
+        // 2. Logic for Suggesting a Skill (POST /api/skills/suggest)
+        document.getElementById('suggestSkillForm').addEventListener('submit', async (e) => {
+             e.preventDefault();
+             const skillName = document.getElementById('newSkillName').value;
+
+             if (!skillName) return;
+
+             try {
+                const response = await axios.post('/api/skills/suggest', {
+                    skillName: skillName,
+                    userId: userId 
+                });
+                document.getElementById('messageArea').textContent = response.data.message;
+                document.getElementById('messageArea').style.color = 'green';
+                document.getElementById('newSkillName').value = '';
+            } catch (error) {
+                const msg = error.response.data.message || 'Error suggesting skill.';
+                document.getElementById('messageArea').textContent = msg;
+                document.getElementById('messageArea').style.color = 'red';
+            }
+
+                // 3. Logic for Basic Profile Update (PUT /api/user/profile/:id)
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userName = document.getElementById('userName').value;
+            const gradeLevel = document.getElementById('gradeLevel').value;
+            const messageArea = document.getElementById('messageArea');
+
+            try {
+                const response = await axios.put(`/api/user/profile/${userId}`, {
+                    userName: userName,
+                    gradeLevel: gradeLevel
+                });
+
+                messageArea.textContent = response.data.message;
+                messageArea.style.color = 'green';
+                
+                // Optional: Update the header greeting dynamically
+                // document.querySelector('h1').textContent = `Edit Profile for ${userName}`;
+
+            } catch (error) {
+                const msg = error.response?.data?.message || 'Failed to update profile.';
+                messageArea.textContent = msg;
+                messageArea.style.color = 'red';
+            }
+
+        // 3. Pre-fill Skills on Page Load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch current user skills from the backend
+                const response = await axios.get(`/api/user/skills/${userId}`);
+                const { offered, sought } = response.data;
+
+                // --- Helper Function to Check Boxes ---
+                const checkBoxes = (skillList, type) => {
+                    skillList.forEach(skill => {
+                        const id = skill.skill_id;
+                        
+                        // 1. Check the Master Toggle (Offered? / Sought?)
+                        // 'type' will be empty for Offered (id="skill_1") or 'seek_' for Sought (id="seek_skill_1")
+                        const masterBox = document.getElementById(`${type}skill_${id}`);
+                        if (masterBox) masterBox.checked = true;
+
+                        // 2. Determine Location Classes based on type
+                        // Offered uses .loc-virtual / .loc-inperson
+                        // Sought uses .seek-virtual / .seek-inperson
+                        const virtualClass = type === 'seek_' ? '.seek-virtual' : '.loc-virtual';
+                        const inPersonClass = type === 'seek_' ? '.seek-inperson' : '.loc-inperson';
+
+                        // 3. Check Location Boxes based on DB Logic
+                        // DB Logic: is_virtual_only=true -> Only Virtual
+                        // DB Logic: is_inperson_only=true -> Only In-Person
+                        // DB Logic: BOTH false -> Flexible (Check BOTH boxes)
+                        
+                        const virtualBox = document.querySelector(`${virtualClass}[data-id="${id}"]`);
+                        const inPersonBox = document.querySelector(`${inPersonClass}[data-id="${id}"]`);
+
+                        if (skill.is_virtual_only) {
+                            if (virtualBox) virtualBox.checked = true;
+                        } else if (skill.is_inperson_only) {
+                            if (inPersonBox) inPersonBox.checked = true;
+                        } else {
+                            // If neither restriction is true, they are flexible (check both)
+                            if (virtualBox) virtualBox.checked = true;
+                            if (inPersonBox) inPersonBox.checked = true;
+                        }
+                    });
+                };
+
+                // Run for Offered Skills (empty prefix for IDs)
+                if (offered.length > 0) checkBoxes(offered, '');
+
+                // Run for Sought Skills ('seek_' prefix for IDs)
+                if (sought.length > 0) checkBoxes(sought, 'seek_');
+
+            } catch (error) {
+                console.error('Failed to load existing skills:', error);
+                // Optional: Display a small warning that data couldn't be loaded
+            }
+        });
+        });
+        });
+        
+    </script>
+</body>
+</html>
