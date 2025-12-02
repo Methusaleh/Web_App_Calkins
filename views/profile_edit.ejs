@@ -282,6 +282,7 @@
                 document.getElementById('messageArea').textContent = msg;
                 document.getElementById('messageArea').style.color = 'red';
             }
+        });
 
                 // 3. Logic for Basic Profile Update (PUT /api/user/profile/:id)
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
@@ -308,35 +309,24 @@
                 messageArea.textContent = msg;
                 messageArea.style.color = 'red';
             }
+        });
 
-        // 3. Pre-fill Skills on Page Load
+       // 3. Pre-fill Skills on Page Load
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Fetch current user skills from the backend
                 const response = await axios.get(`/api/user/skills/${userId}`);
                 const { offered, sought } = response.data;
 
-                // --- Helper Function to Check Boxes ---
                 const checkBoxes = (skillList, type) => {
                     skillList.forEach(skill => {
                         const id = skill.skill_id;
                         
-                        // 1. Check the Master Toggle (Offered? / Sought?)
-                        // 'type' will be empty for Offered (id="skill_1") or 'seek_' for Sought (id="seek_skill_1")
                         const masterBox = document.getElementById(`${type}skill_${id}`);
                         if (masterBox) masterBox.checked = true;
 
-                        // 2. Determine Location Classes based on type
-                        // Offered uses .loc-virtual / .loc-inperson
-                        // Sought uses .seek-virtual / .seek-inperson
                         const virtualClass = type === 'seek_' ? '.seek-virtual' : '.loc-virtual';
                         const inPersonClass = type === 'seek_' ? '.seek-inperson' : '.loc-inperson';
 
-                        // 3. Check Location Boxes based on DB Logic
-                        // DB Logic: is_virtual_only=true -> Only Virtual
-                        // DB Logic: is_inperson_only=true -> Only In-Person
-                        // DB Logic: BOTH false -> Flexible (Check BOTH boxes)
-                        
                         const virtualBox = document.querySelector(`${virtualClass}[data-id="${id}"]`);
                         const inPersonBox = document.querySelector(`${inPersonClass}[data-id="${id}"]`);
 
@@ -345,27 +335,19 @@
                         } else if (skill.is_inperson_only) {
                             if (inPersonBox) inPersonBox.checked = true;
                         } else {
-                            // If neither restriction is true, they are flexible (check both)
                             if (virtualBox) virtualBox.checked = true;
                             if (inPersonBox) inPersonBox.checked = true;
                         }
                     });
                 };
 
-                // Run for Offered Skills (empty prefix for IDs)
                 if (offered.length > 0) checkBoxes(offered, '');
-
-                // Run for Sought Skills ('seek_' prefix for IDs)
                 if (sought.length > 0) checkBoxes(sought, 'seek_');
 
             } catch (error) {
                 console.error('Failed to load existing skills:', error);
-                // Optional: Display a small warning that data couldn't be loaded
             }
-        });
-        });
-        });
-        
+        }); // <--- This is the ONLY closing sequence needed for DOMContentLoaded
     </script>
 </body>
 </html>
