@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SkillSwap - Register</title>
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+    <main>
+        <h1>Create Your SkillSwap Account</h1>
+        <p>All fields marked with an asterisk (*) are required.</p>
+
+        <form id="registerForm">
+            <label for="email">Email *</label>
+            <input type="email" id="regEmail" required>
+
+            <label for="password">Password *</label>
+            <input type="password" id="regPassword" required>
+
+            <label for="passwordConfirm">Confirm Password *</label>
+            <input type="password" id="passwordConfirm" required>
+
+            <label for="userName">Full Name *</label>
+            <input type="text" id="regUserName" required>
+
+            <label for="dateOfBirth">Date of Birth *</label>
+            <input type="date" id="regDateOfBirth" required>
+
+            <label for="gradeLevel">Grade/Education Level</label>
+            <select id="regGradeLevel">
+                <option value="">-- Select --</option>
+                <option value="6th">6th Grade</option>
+                <option value="7th">7th Grade</option>
+                <option value="12th">12th Grade</option>
+                <option value="College">College</option>
+            </select>
+
+            <label for="schoolCollege">School/College (Optional)</label>
+            <input type="text" id="regSchoolCollege">
+
+            <button type="submit">Register Account</button>
+        </form>
+        
+        <p id="messageArea" style="margin-top: 15px;"></p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', handleRegisterSubmit);
+
+        // --- Client-Side JavaScript Function ---
+        async function handleRegisterSubmit(event) {
+            event.preventDefault(); 
+
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+            const userName = document.getElementById('regUserName').value;
+            const dateOfBirth = document.getElementById('regDateOfBirth').value;
+            const gradeLevel = document.getElementById('regGradeLevel').value;
+            const schoolCollege = document.getElementById('regSchoolCollege').value;
+            const messageArea = document.getElementById('messageArea');
+            messageArea.textContent = ''; 
+
+            // Client-Side Validation: Password Match
+            if (password !== passwordConfirm) {
+                messageArea.textContent = 'Error: Passwords do not match.';
+                messageArea.style.color = 'red';
+                return;
+            }
+
+            try {
+                // Axios POST request to the Express API
+                const response = await axios.post('/api/register', {
+                    email: email,
+                    password: password,
+                    userName: userName,
+                    dateOfBirth: dateOfBirth,
+                    gradeLevel: gradeLevel, // Will be null if empty string submitted (due to Express logic)
+                    schoolCollege: schoolCollege // Will be null if empty string submitted
+                });
+
+                // Handle Success (Status 201 Created)
+                if (response.status === 201) {
+                    messageArea.textContent = 'Registration successful! Redirecting to login...';
+                    messageArea.style.color = 'green';
+                    
+                    // Redirect to the dashboard/login view after success
+                    window.location.href = '/'; 
+                }
+
+            } catch (error) {
+                // Handle Errors (e.g., 409 Conflict - Email already exists, 400 Bad Request)
+                
+                let errorMessage = 'An unexpected server error occurred.';
+                
+                if (error.response) {
+                    // Use the specific message sent from your Express backend
+                    errorMessage = error.response.data.message || errorMessage;
+                }
+                
+                messageArea.textContent = errorMessage;
+                messageArea.style.color = 'red';
+                console.error('Registration Failed:', errorMessage);
+            }
+        }
+    </script>
+</body>
+</html>
