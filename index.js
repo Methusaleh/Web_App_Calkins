@@ -212,6 +212,22 @@ app.get('/', async (req, res) => {
     });
 });
 
+
+// GET /register - Renders the registration form page
+app.get('/register', async (req, res) => {
+    // You must ensure the user is NOT logged in before allowing them to register
+    if (req.session.user) {
+        return res.redirect('/'); // Redirect to dashboard if already authenticated
+    }
+
+    // This is a public, unauthenticated page, so it doesn't need data fetching.
+    res.render('register', { 
+        pageTitle: 'SkillSwap Registration',
+        user: null // Explicitly pass null since they are unauthenticated
+    });
+});
+
+
 app.post('/api/register', async (req, res) => {
     const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege } = req.body;
 
