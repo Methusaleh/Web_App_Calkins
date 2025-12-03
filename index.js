@@ -675,6 +675,33 @@ app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /session/request - Renders the session request form
+app.get('/session/request', isAuthenticated, async (req, res) => {
+    try {
+        // 1. Fetch all potential providers (excluding the current user)
+        // Note: In a real app, you'd filter this by who actually offers skills.
+        const usersResult = await pool.query(
+            'SELECT user_id, user_name FROM Users WHERE user_id != $1 ORDER BY user_name ASC', 
+            [req.user.id]
+        );
+
+        // 2. Fetch all skills
+        const skillsResult = await pool.query(
+            'SELECT skill_id, skill_name FROM Skills ORDER BY skill_name ASC'
+        );
+
+        res.render('session_request', {
+            pageTitle: 'Request a Session',
+            user: req.user,
+            providers: usersResult.rows,
+            skills: skillsResult.rows
+        });
+    } catch (error) {
+        console.error('Error loading session request page:', error.message);
+        res.status(500).send('Error loading form.');
+    }
+});
+
 //creates a new session request
 app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
     

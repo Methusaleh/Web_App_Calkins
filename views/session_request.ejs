@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= pageTitle %></title>
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+    <main>
+        <h1>Request a Tutoring Session</h1>
+        <p>Fill out the details below to propose a meeting.</p>
+
+        <form id="sessionRequestForm">
+            
+            <label for="providerId">I want to learn from:</label>
+            <select id="providerId" required>
+                <option value="">-- Select a Tutor --</option>
+                <% providers.forEach(provider => { %>
+                    <option value="<%= provider.user_id %>"><%= provider.user_name %></option>
+                <% }) %>
+            </select>
+
+            <label for="skillTaughtId">Topic/Skill:</label>
+            <select id="skillTaughtId" required>
+                <option value="">-- Select a Skill --</option>
+                <% skills.forEach(skill => { %>
+                    <option value="<%= skill.skill_id %>"><%= skill.skill_name %></option>
+                <% }) %>
+            </select>
+
+            <label for="sessionDateTime">Date & Time:</label>
+            <input type="datetime-local" id="sessionDateTime" required>
+
+            <label for="locationType">Preferred Location:</label>
+            <select id="locationType" required>
+                <option value="">-- Select --</option>
+                <option value="Online">Online (Virtual)</option>
+                <option value="In-Person">In-Person</option>
+            </select>
+
+            <button type="submit">Send Request</button>
+        </form>
+
+        <p id="messageArea" style="margin-top: 15px;"></p>
+        
+        <hr>
+        <a href="/">Back to Dashboard</a>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const requesterId = '<%= user.id %>';
+
+        document.getElementById('sessionRequestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const providerId = document.getElementById('providerId').value;
+            const skillTaughtId = document.getElementById('skillTaughtId').value;
+            const sessionDateTime = document.getElementById('sessionDateTime').value;
+            const locationType = document.getElementById('locationType').value;
+            const messageArea = document.getElementById('messageArea');
+
+            // Basic client-side check
+            if (!providerId || !skillTaughtId || !sessionDateTime) {
+                messageArea.textContent = "Please fill out all fields.";
+                messageArea.style.color = "red";
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/sessions/request', {
+                    requesterId: requesterId,
+                    providerId: providerId,
+                    skillTaughtId: skillTaughtId,
+                    sessionDateTime: sessionDateTime,
+                    locationType: locationType
+                });
+
+                messageArea.textContent = response.data.message;
+                messageArea.style.color = "green";
+                
+                // Optional: clear form
+                // document.getElementById('sessionRequestForm').reset();
+
+            } catch (error) {
+                const msg = error.response?.data?.message || 'Error submitting request.';
+                messageArea.textContent = msg;
+                messageArea.style.color = "red";
+            }
+        });
+    </script>
+</body>
+</html>
