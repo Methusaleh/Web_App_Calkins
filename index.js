@@ -675,6 +675,27 @@ app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /api/skills/:id/providers - Fetches non-admin users who offer a specific skill
+app.get('/api/skills/:id/providers', isAuthenticated, async (req, res) => {
+    const skillId = req.params.id;
+    try {
+        const result = await pool.query(
+            `SELECT u.user_id, u.user_name 
+             FROM Users u
+             JOIN User_Skills_Offered uso ON u.user_id = uso.user_id
+             WHERE uso.skill_id = $1 
+               AND u.is_admin = FALSE  -- Filter out admins
+               AND u.user_id != $2     -- Filter out the requesting user (self)
+             ORDER BY u.user_name ASC`,
+            [skillId, req.user.id]
+        );
+        res.status(200).json({ providers: result.rows });
+    } catch (error) {
+        console.error('Error fetching providers:', error.message);
+        res.status(500).json({ message: 'Error fetching providers.' });
+    }
+});
+
 // GET /session/request - Renders the session request form
 app.get('/session/request', isAuthenticated, async (req, res) => {
     try {
@@ -693,7 +714,6 @@ app.get('/session/request', isAuthenticated, async (req, res) => {
         res.render('session_request', {
             pageTitle: 'Request a Session',
             user: req.user,
-            providers: usersResult.rows,
             skills: skillsResult.rows
         });
     } catch (error) {

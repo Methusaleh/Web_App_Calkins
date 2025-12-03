@@ -6,29 +6,31 @@
 </head>
 <body>
     <main>
+        <div style="margin-bottom: 20px;">
+            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
+        </div>
+
         <h1>Request a Tutoring Session</h1>
-        <p>Fill out the details below to propose a meeting.</p>
+        <p>First, choose a topic. Then, select a tutor available for that skill.</p>
 
         <form id="sessionRequestForm">
             
-            <label for="providerId">I want to learn from:</label>
-            <select id="providerId" required>
-                <option value="">-- Select a Tutor --</option>
-                <% providers.forEach(provider => { %>
-                    <option value="<%= provider.user_id %>"><%= provider.user_name %></option>
-                <% }) %>
-            </select>
-
-            <label for="skillTaughtId">Topic/Skill:</label>
-            <select id="skillTaughtId" required>
-                <option value="">-- Select a Skill --</option>
+            <label for="skillTaughtId">I want to learn:</label>
+            <select id="skillTaughtId" required onchange="loadProviders()">
+                <option value="">-- Select a Topic --</option>
                 <% skills.forEach(skill => { %>
                     <option value="<%= skill.skill_id %>"><%= skill.skill_name %></option>
                 <% }) %>
             </select>
 
-            <label for="sessionDateTime">Date & Time:</label>
+            <label for="providerId">Select a Tutor:</label>
+            <select id="providerId" required disabled>
+                <option value="">-- Please select a topic first --</option>
+            </select>
+
+            <label for="sessionDateTime">Proposed Date & Time:</label>
             <input type="datetime-local" id="sessionDateTime" required>
+            <p style="font-size: 0.8em; color: #666;">* The tutor will confirm the exact time with you.</p>
 
             <label for="locationType">Preferred Location:</label>
             <select id="locationType" required>
@@ -42,13 +44,47 @@
 
         <p id="messageArea" style="margin-top: 15px;"></p>
         
-        <hr>
-        <a href="/">Back to Dashboard</a>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         const requesterId = '<%= user.id %>';
+
+        // --- New Function: Load Providers based on Skill ---
+        async function loadProviders() {
+            const skillId = document.getElementById('skillTaughtId').value;
+            const providerSelect = document.getElementById('providerId');
+            
+            // Reset provider dropdown
+            providerSelect.innerHTML = '<option value="">-- Loading Tutors... --</option>';
+            providerSelect.disabled = true;
+
+            if (!skillId) {
+                providerSelect.innerHTML = '<option value="">-- Please select a topic first --</option>';
+                return;
+            }
+
+            try {
+                // Fetch specific providers for this skill
+                const response = await axios.get(`/api/skills/${skillId}/providers`);
+                const providers = response.data.providers;
+
+                providerSelect.innerHTML = '<option value="">-- Select a Tutor --</option>';
+                
+                if (providers.length === 0) {
+                    providerSelect.innerHTML += '<option value="" disabled>No tutors found for this skill</option>';
+                } else {
+                    providers.forEach(p => {
+                        providerSelect.innerHTML += `<option value="${p.user_id}">${p.user_name}</option>`;
+                    });
+                    providerSelect.disabled = false; // Enable the dropdown
+                }
+
+            } catch (error) {
+                console.error(error);
+                providerSelect.innerHTML = '<option value="">Error loading tutors</option>';
+            }
+        }
 
         document.getElementById('sessionRequestForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -59,7 +95,6 @@
             const locationType = document.getElementById('locationType').value;
             const messageArea = document.getElementById('messageArea');
 
-            // Basic client-side check
             if (!providerId || !skillTaughtId || !sessionDateTime) {
                 messageArea.textContent = "Please fill out all fields.";
                 messageArea.style.color = "red";
@@ -77,9 +112,6 @@
 
                 messageArea.textContent = response.data.message;
                 messageArea.style.color = "green";
-                
-                // Optional: clear form
-                // document.getElementById('sessionRequestForm').reset();
 
             } catch (error) {
                 const msg = error.response?.data?.message || 'Error submitting request.';
