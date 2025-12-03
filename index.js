@@ -772,6 +772,14 @@ app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /my_sessions - Renders the session management page
+app.get('/my_sessions', isAuthenticated, (req, res) => {
+    res.render('my_sessions', { 
+        pageTitle: 'My Sessions', 
+        user: req.user 
+    });
+});
+
 //gets all sessions (as requester or provider) for a specific user
 app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
     
@@ -781,6 +789,8 @@ app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
         const result = await pool.query(
             `SELECT 
                 s.session_id,
+                s.provider.id,
+                s.requester.id,
                 s.session_date_time,
                 s.location_type,
                 s.status,

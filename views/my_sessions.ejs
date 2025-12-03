@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= pageTitle %></title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <style>
+        /* Simple table styling for the dashboard */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        
+        /* Status Colors */
+        .status-requested { color: #d97706; font-weight: bold; } /* Amber */
+        .status-confirmed { color: #059669; font-weight: bold; } /* Green */
+        .status-denied, .status-cancelled { color: #dc2626; }    /* Red */
+        .status-completed { color: #2563eb; }                    /* Blue */
+
+        .btn-action { padding: 5px 10px; font-size: 0.9em; margin-right: 5px; cursor: pointer; }
+        .btn-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    </style>
+</head>
+<body>
+    <main>
+        <div style="margin-bottom: 20px;">
+            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
+        </div>
+
+        <h1>My Sessions</h1>
+        <p id="loadingMsg">Loading your session history...</p>
+        
+        <table id="sessionsTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Role</th>
+                    <th>With</th>
+                    <th>Topic</th>
+                    <th>Status</th>
+                    <th>Actions / Link</th>
+                </tr>
+            </thead>
+            <tbody id="sessionsBody">
+                </tbody>
+        </table>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Current User ID from server session
+        const currentUserId = '<%= user.id %>'; 
+
+        document.addEventListener('DOMContentLoaded', fetchSessions);
+
+        async function fetchSessions() {
+            try {
+                const response = await axios.get(`/api/sessions/user/${currentUserId}`);
+                const sessions = response.data.sessions;
+                
+                const tbody = document.getElementById('sessionsBody');
+                tbody.innerHTML = ''; 
+
+                if (sessions.length === 0) {
+                    document.getElementById('loadingMsg').textContent = "You have no sessions yet.";
+                    return;
+                }
+
+                sessions.forEach(session => {
+                    const row = document.createElement('tr');
+                    
+                    // 1. Determine Role (Teacher vs Student)
+                    // We compare currentUserId (int) with session.provider_id (int)
+                    const isTeacher = (currentUserId === session.provider_id);
+                    const myRole = isTeacher ? 'Teacher' : 'Student';
+                    const otherPersonName = isTeacher ? session.requester_name : session.provider_name;
+
+                    // 2. Format Date
+                    const dateObj = new Date(session.session_date_time);
+                    const dateStr = dateObj.toLocaleString(); // e.g., "11/14/2025, 2:30 PM"
+
+                    // 3. Generate Action Buttons Logic
+                    let actionsHtml = '';
+                    
+                    // --- REQUESTED STATE ---
+                    if (session.status === 'Requested') {
+                        if (isTeacher) {
+                            // Teacher can Confirm or Deny
+                            actionsHtml = `
+                                <button class="btn-action" onclick="confirmSession(${session.session_id}, '${session.location_type}')">Confirm</button>
+                                <button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Deny</button>
+                            `;
+                        } else {
+                            // Student can Cancel
+                            actionsHtml = `<button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Cancel Request</button>`;
+                        }
+                    } 
+                    // --- CONFIRMED STATE ---
+                    else if (session.status === 'Confirmed') {
+                        // Show Meet Link if Online
+                        if (session.location_type === 'Online' && session.meeting_url) {
+                            actionsHtml += `<a href="${session.meeting_url}" target="_blank" style="font-weight:bold;">🎥 Join Meeting</a><br><br>`;
+                        } else if (session.location_type === 'In-Person') {
+                            actionsHtml += `<span>📍 In-Person</span><br><br>`;
+                        }
+
+                        if (isTeacher) {
+                            // Teacher can mark complete
+                            actionsHtml += `<button class="btn-action" onclick="completeSession(${session.session_id})">Mark Complete</button>`;
+                        } else {
+                            // Student just waits
+                            actionsHtml += `<span style="font-size:0.8em; color:gray;">Waiting for teacher to complete</span>`;
+                        }
+                    } 
+                    // --- COMPLETED STATE ---
+                    else if (session.status === 'Completed') {
+                         if (!isTeacher) {
+                             // Student can Rate (We will build the rating page next)
+                             actionsHtml = `<a href="/session/rate/${session.session_id}" class="btn-action">Rate Teacher</a>`;
+                         } else {
+                             actionsHtml = '<span>✅ Complete</span>';
+                         }
+                    } 
+                    // --- DENIED/CANCELLED ---
+                    else {
+                        actionsHtml = '<span>---</span>';
+                    }
+
+                    row.innerHTML = `
+                        <td>${dateStr}</td>
+                        <td>${myRole}</td>
+                        <td>${otherPersonName}</td>
+                        <td>${session.skill_name}</td>
+                        <td class="status-${session.status.toLowerCase()}">${session.status}</td>
+                        <td>${actionsHtml}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('loadingMsg').style.display = 'none';
+                document.getElementById('sessionsTable').style.display = 'table';
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loadingMsg').textContent = "Error loading session history.";
+            }
+        }
+
+        // --- Action Functions ---
+
+        async function confirmSession(id, locationType) {
+            let meetUrl = null;
+            if (locationType === 'Online') {
+                meetUrl = prompt("Please enter the Google Meet URL for this session:");
+                if (meetUrl === null) return; // User hit cancel on prompt
+            }
+
+            try {
+                await axios.post('/api/sessions/confirm', {
+                    sessionId: id,
+                    meetingUrl: meetUrl
+                });
+                alert("Session Confirmed!");
+                fetchSessions(); // Reload table to show new status
+            } catch (err) { 
+                alert(err.response?.data?.message || 'Error confirming session'); 
+            }
+        }
+
+        async function denySession(id) {
+            if(!confirm("Are you sure you want to cancel/deny this session?")) return;
+            try {
+                await axios.post('/api/sessions/deny', { sessionId: id, reason: 'User action' });
+                fetchSessions();
+            } catch (err) { alert('Error processing request'); }
+        }
+
+        async function completeSession(id) {
+            if(!confirm("Mark this session as fully completed?")) return;
+            try {
+                await axios.post('/api/sessions/complete', { sessionId: id });
+                fetchSessions();
+            } catch (err) { alert('Error completing session'); }
+        }
+    </script>
+</body>
+</html>
