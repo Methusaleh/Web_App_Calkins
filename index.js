@@ -780,6 +780,46 @@ app.get('/my_sessions', isAuthenticated, (req, res) => {
     });
 });
 
+// GET /session/rate/:id - Renders the rating form
+app.get('/session/rate/:id', isAuthenticated, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Fetch session details to verify user is the requester and status is completed
+        const result = await pool.query(
+            `SELECT s.session_id, s.requester_id, s.provider_id, s.status, u.user_name AS provider_name
+             FROM Sessions s
+             JOIN Users u ON s.provider_id = u.user_id
+             WHERE s.session_id = $1`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).send('Session not found.');
+        }
+
+        const session = result.rows[0];
+
+        // Security Checks
+        if (session.requester_id !== req.user.id) {
+            return res.status(403).send('Access Denied: You can only rate sessions you requested.');
+        }
+        if (session.status !== 'Completed') {
+            return res.status(403).send('This session is not yet marked as completed.');
+        }
+
+        res.render('rating_form', {
+            pageTitle: 'Rate Your Session',
+            user: req.user,
+            session: session
+        });
+
+    } catch (error) {
+        console.error('Error loading rating form:', error.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // GET /api/sessions/user/:id - Fetches all sessions (as requester or provider) for a specific user
 app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
     // NOTE: This route REQUIRES authentication middleware
