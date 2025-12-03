@@ -69,7 +69,7 @@
                     
                     // 1. Determine Role (Teacher vs Student)
                     // We compare currentUserId (int) with session.provider_id (int)
-                    const isTeacher = (currentUserId === session.provider_id);
+                    const isTeacher = (String(currentUserId) === String(session.provider_id));
                     const myRole = isTeacher ? 'Teacher' : 'Student';
                     const otherPersonName = isTeacher ? session.requester_name : session.provider_name;
 

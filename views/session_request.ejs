@@ -91,8 +91,10 @@
 
             const providerId = document.getElementById('providerId').value;
             const skillTaughtId = document.getElementById('skillTaughtId').value;
-            const sessionDateTime = document.getElementById('sessionDateTime').value;
             const locationType = document.getElementById('locationType').value;
+            const rawDateValue = document.getElementById('sessionDateTime').value;
+            const localDate = new Date(rawDateValue);
+            const sessionDateTime = localDate.toISOString();
             const messageArea = document.getElementById('messageArea');
 
             if (!providerId || !skillTaughtId || !sessionDateTime) {
