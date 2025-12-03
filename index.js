@@ -859,6 +859,14 @@ app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /admin - Renders the Admin Dashboard
+app.get('/admin', isAdmin, (req, res) => {
+    res.render('admin_dashboard', { 
+        pageTitle: 'Admin Control Panel', 
+        user: req.user 
+    });
+});
+
 //confirms a session and sets the meeting URL
 app.post('/api/sessions/confirm', isAuthenticated, async (req, res) => {
     
