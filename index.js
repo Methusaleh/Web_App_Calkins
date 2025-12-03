@@ -780,8 +780,9 @@ app.get('/my_sessions', isAuthenticated, (req, res) => {
     });
 });
 
-//gets all sessions (as requester or provider) for a specific user
+// GET /api/sessions/user/:id - Fetches all sessions (as requester or provider) for a specific user
 app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
+    // NOTE: This route REQUIRES authentication middleware
     
     const { id } = req.params;
 
@@ -789,12 +790,12 @@ app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
         const result = await pool.query(
             `SELECT 
                 s.session_id,
-                s.provider.id,
-                s.requester.id,
                 s.session_date_time,
                 s.location_type,
                 s.status,
                 s.meeting_url,
+                s.provider_id,
+                s.requester_id,
                 p.user_name AS provider_name,
                 r.user_name AS requester_name,
                 sk.skill_name AS skill_name
