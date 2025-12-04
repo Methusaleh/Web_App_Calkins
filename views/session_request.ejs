@@ -5,6 +5,8 @@
     <link rel="stylesheet" href="/styles/main.css">
 </head>
 <body>
+    <div id="toast-container"></div>
+
     <main>
         <div style="margin-bottom: 20px;">
             <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
@@ -49,13 +51,27 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         const requesterId = '<%= user.id %>';
+        window.isProcessing = false; // 1. Lock Flag
 
-        // --- New Function: Load Providers based on Skill ---
+        // --- Toast Helper (Copy/Pasted for consistency) ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Provider Loading Logic ---
         async function loadProviders() {
             const skillId = document.getElementById('skillTaughtId').value;
             const providerSelect = document.getElementById('providerId');
             
-            // Reset provider dropdown
             providerSelect.innerHTML = '<option value="">-- Loading Tutors... --</option>';
             providerSelect.disabled = true;
 
@@ -65,7 +81,6 @@
             }
 
             try {
-                // Fetch specific providers for this skill
                 const response = await axios.get(`/api/skills/${skillId}/providers`);
                 const providers = response.data.providers;
 
@@ -73,35 +88,49 @@
                 
                 if (providers.length === 0) {
                     providerSelect.innerHTML += '<option value="" disabled>No tutors found for this skill</option>';
+                    // UX Improvement: Show a toast if no tutors exist
+                    showToast("No tutors currently offer this skill.", "info");
                 } else {
                     providers.forEach(p => {
                         providerSelect.innerHTML += `<option value="${p.user_id}">${p.user_name}</option>`;
                     });
-                    providerSelect.disabled = false; // Enable the dropdown
+                    providerSelect.disabled = false; 
                 }
 
             } catch (error) {
                 console.error(error);
                 providerSelect.innerHTML = '<option value="">Error loading tutors</option>';
+                showToast("Failed to load tutors list.", "error");
             }
         }
 
+        // --- Form Submission with Locking & Toasts ---
         document.getElementById('sessionRequestForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // 2. Check Lock
+            if (window.isProcessing) return;
+            
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.textContent;
+            
             const providerId = document.getElementById('providerId').value;
             const skillTaughtId = document.getElementById('skillTaughtId').value;
-            const locationType = document.getElementById('locationType').value;
             const rawDateValue = document.getElementById('sessionDateTime').value;
-            const localDate = new Date(rawDateValue);
-            const sessionDateTime = localDate.toISOString();
-            const messageArea = document.getElementById('messageArea');
+            const locationType = document.getElementById('locationType').value;
 
-            if (!providerId || !skillTaughtId || !sessionDateTime) {
-                messageArea.textContent = "Please fill out all fields.";
-                messageArea.style.color = "red";
+            if (!providerId || !skillTaughtId || !rawDateValue) {
+                showToast("Please fill out all fields.", "error");
                 return;
             }
+
+            // 3. Set Lock & Visual Feedback
+            window.isProcessing = true;
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Sending...";
+
+            const localDate = new Date(rawDateValue);
+            const sessionDateTime = localDate.toISOString();
 
             try {
                 const response = await axios.post('/api/sessions/request', {
@@ -112,13 +141,23 @@
                     locationType: locationType
                 });
 
-                messageArea.textContent = response.data.message;
-                messageArea.style.color = "green";
+                showToast("Request sent successfully!", "success");
+                
+                // Optional: Redirect to My Sessions after a brief delay
+                setTimeout(() => {
+                    window.location.href = '/my_sessions';
+                }, 1500);
 
             } catch (error) {
                 const msg = error.response?.data?.message || 'Error submitting request.';
-                messageArea.textContent = msg;
-                messageArea.style.color = "red";
+                showToast(msg, "error");
+                
+                // Reset Button only on error (on success we redirect)
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+            } finally {
+                // 4. Release Lock
+                window.isProcessing = false;
             }
         });
     </script>

@@ -16,34 +16,28 @@
             <hr>
 
             <h2>Quick Links</h2>
-            <ul>
-                <li><a href="/profile/edit">Edit Your Profile and Skills</a></li>
-                <li><a href="/my_sessions">View My Sessions and Requests</a></li>
+
+            <div class="dashboard-actions" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                    <h3>👤 Your Profile</h3>
+                    <p>Keep your skills and details up to date.</p>
+                    <a href="/profile/edit" style="display:inline-block; margin-top:10px; font-weight:bold;">Edit Profile &rarr;</a>
+                </div>
+
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                    <h3>📅 Your Sessions</h3>
+                    <p>View upcoming lessons or check requests.</p>
+                    <a href="/my_sessions" style="display:inline-block; margin-top:10px; font-weight:bold;">Manage Sessions &rarr;</a>
+                </div>
+
                 <% if (user.isAdmin) { %>
-                    <li><a href="/admin">Go to Admin Control Panel (Security and User Management)</a></li>
+                    <div style="border: 1px solid #fca5a5; background: #fef2f2; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                        <h3 style="color:#991b1b;">🛡️ Admin Panel</h3>
+                        <p>Manage users and security reports.</p>
+                        <a href="/admin" style="display:inline-block; margin-top:10px; font-weight:bold; color:#991b1b;">Open Controls &rarr;</a>
+                    </div>
                 <% } %>
-            </ul>
-            
-            <button id="logoutButton">Log Out Securely</button>
-
-        <% } else { %>
-
-            <h1>Welcome to SkillSwap</h1>
-            <h2>Log In</h2>
-
-            <form id="loginForm">
-                <input type="email" id="email" placeholder="Email" required>
-                <input type="password" id="password" placeholder="Password" required>
-                <button type="submit">Log In</button>
-            </form>
-            
-            <p id="messageArea" style="color: red; margin-top: 10px;"></p>
-
-            <hr>
-            
-            <p>New Student? <a href="/register">Create an Account Here</a></p>
-
-        <% } %>
+            </div>
 
     </main>
 

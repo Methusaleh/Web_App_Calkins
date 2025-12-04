@@ -1,32 +1,44 @@
-/* --- Toast Notification Container --- */
+/* --- Global Toast Notification Container --- */
 #toast-container {
     position: fixed;
     top: 20px;
     right: 20px;
     z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-/* --- The Toast Itself --- */
+/* --- The Toast Card --- */
 .toast {
     min-width: 250px;
-    margin-bottom: 10px;
-    padding: 15px;
-    border-radius: 4px;
+    padding: 15px 20px;
+    border-radius: 6px;
     color: white;
-    font-family: sans-serif;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     opacity: 0;
-    transform: translateY(-20px);
-    transition: opacity 0.3s, transform 0.3s;
+    transform: translateX(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    display: flex;
+    align-items: center;
 }
 
 /* --- Animation State: Visible --- */
 .toast.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
 }
 
 /* --- Toast Types (Colors) --- */
-.toast-success { background-color: #10b981; } /* Green */
-.toast-error { background-color: #ef4444; }   /* Red */
-.toast-info { background-color: #3b82f6; }    /* Blue */
+.toast-success { background-color: #10b981; border-left: 5px solid #047857; } /* Green */
+.toast-error { background-color: #ef4444; border-left: 5px solid #b91c1c; }   /* Red */
+.toast-info { background-color: #3b82f6; border-left: 5px solid #1d4ed8; }    /* Blue */
+
+/* --- Basic Layout Utilities (Optional, helps if you have no other CSS) --- */
+body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px; }
+a { color: #2563eb; }
+button { cursor: pointer; }
+input, select, textarea { display: block; width: 100%; max-width: 400px; margin-bottom: 15px; padding: 8px; }
+label { font-weight: bold; margin-top: 10px; display: block; }
