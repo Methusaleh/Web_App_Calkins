@@ -412,6 +412,32 @@ app.get('/api/user/skills/:id', isAuthenticated, async (req, res) => {
     }
 });
 
+// POST /api/reports - Submit a new security report against a user
+app.post('/api/reports', isAuthenticated, async (req, res) => {
+    const { reportedUserId, reason } = req.body;
+    const reporterId = req.user.id;
+
+    if (!reportedUserId || !reason) {
+        return res.status(400).json({ message: 'Reported user ID and reason are required.' });
+    }
+
+    try {
+        // Insert the report into the database
+        const result = await pool.query(
+            `INSERT INTO Reports (reporter_id, reported_user_id, report_reason, report_status)
+             VALUES ($1, $2, $3, 'New')
+             RETURNING report_id`,
+            [reporterId, reportedUserId, reason]
+        );
+
+        res.status(201).json({ message: 'Report submitted successfully. An admin will review it shortly.' });
+
+    } catch (error) {
+        console.error('Report Submission Error:', error.message);
+        res.status(500).json({ message: 'Server error while submitting report.' });
+    }
+});
+
 app.post('/api/register', async (req, res) => {
     const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege } = req.body;
 
