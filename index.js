@@ -45,27 +45,35 @@ app.use(morgan('combined'));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-//checks if user is logged in
+// 1. Checks if a user is logged in
 function isAuthenticated(req, res, next) {
     if (req.session.user) {
-        //user logged in
         req.user = req.session.user; 
         next();
     } else {
-        //user not logged in
-        res.status(401).json({ message: 'Unauthorized. Please log in.' });
+        if (req.originalUrl.startsWith('/api/')) {
+            res.status(401).json({ message: 'Unauthorized. Please log in.' });
+        } else {
+            // Redirect unauthenticated browser users to the login page
+            res.redirect('/'); 
+        }
     }
 }
 
-//check for admin rights
+// 2. Checks if the logged-in user is an administrator
 function isAdmin(req, res, next) {
     if (req.session.user && req.session.user.isAdmin) {
-        //user is an admin
         req.user = req.session.user;
         next();
     } else {
-        //user is not an admin
-        res.status(403).json({ message: 'Access denied. Administrator privileges required.' });
+        // Smart Check: Is this an API call or a Page load?
+        if (req.originalUrl.startsWith('/api/')) {
+            // If it's an API call (Axios), send JSON error
+            res.status(403).json({ message: 'Access denied. Administrator privileges required.' });
+        } else {
+            // If it's a browser page load (like /admin), redirect to Dashboard
+            res.redirect('/'); 
+        }
     }
 }
 
