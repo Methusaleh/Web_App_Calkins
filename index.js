@@ -994,17 +994,19 @@ app.post('/api/sessions/confirm', isAuthenticated, async (req, res) => {
     }
 });
 
-//Denies a pending request or cancels a confirmed session
+// POST /api/sessions/deny - Denies a pending request or cancels a confirmed session
 app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
+    // NOTE: This route REQUIRES authentication middleware
     
     const { sessionId, reason } = req.body;
+    const userId = req.user.id; // Get the ID of the person clicking the button
     
     if (!sessionId) {
         return res.status(400).json({ message: 'Session ID is required for denial/cancellation.' });
     }
 
     try {
-        //current session status
+        // 1. First, retrieve the current session status AND participants
         const currentSession = await pool.query(
             'SELECT status, provider_id, requester_id FROM Sessions WHERE session_id = $1',
             [sessionId]
@@ -1014,29 +1016,36 @@ app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
             return res.status(404).json({ message: 'Session not found.' });
         }
 
-        const currentStatus = currentSession.rows[0].status;
+        const session = currentSession.rows[0];
+        const currentStatus = session.status;
         let newStatus;
 
-        //change status based on current status
+        // 2. Determine new status based on State AND Who is acting
         if (currentStatus === 'Requested') {
-            newStatus = 'Denied'; //deny
+            if (userId === session.requester_id) {
+                // If the STUDENT cancels their own request -> 'Cancelled'
+                newStatus = 'Cancelled';
+            } else {
+                // If the TEACHER denies the request -> 'Denied'
+                newStatus = 'Denied';
+            }
         } else if (currentStatus === 'Confirmed') {
-            newStatus = 'Cancelled'; //cancel
+            newStatus = 'Cancelled'; // Either party is canceling an agreed session
         } else {
-            //stops status from changing if it's already deny, cancel, or complete
             return res.status(400).json({ message: `Cannot change status from ${currentStatus}.` });
         }
 
-        //update table
+        // 3. Update the Sessions table
         const result = await pool.query(
             `UPDATE Sessions
              SET status = $1,
-                 cancellation_reason = $2 -- Assuming you will add this column for audit/feedback
+                 cancellation_reason = $2
              WHERE session_id = $3
              RETURNING session_id, status;`,
             [newStatus, reason || 'No reason provided', sessionId]
         );
 
+        // 4. Success Response
         res.status(200).json({ 
             message: `Session status updated to ${newStatus}.`, 
             session: result.rows[0] 
