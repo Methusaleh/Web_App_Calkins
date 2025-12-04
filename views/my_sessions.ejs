@@ -27,7 +27,12 @@
             <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
         </div>
 
-        <h1>My Sessions</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin: 0;">My Sessions</h1> <a href="/session/request" style="background: #2563eb; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                + New Request
+            </a>
+        </div>
+        
         <p id="loadingMsg">Loading your session history...</p>
         
         <table id="sessionsTable" style="display:none;">
