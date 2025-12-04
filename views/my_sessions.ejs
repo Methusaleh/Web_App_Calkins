@@ -32,7 +32,7 @@
                 + New Request
             </a>
         </div>
-        
+
         <p id="loadingMsg">Loading your session history...</p>
         
         <table id="sessionsTable" style="display:none;">
@@ -158,12 +158,17 @@
                     // --- COMPLETED STATE ---
                     else if (session.status === 'Completed') {
                          if (!isTeacher) {
-                             // Student can Rate (We will build the rating page next)
-                             actionsHtml = `<a href="/session/rate/${session.session_id}" class="btn-action">Rate Teacher</a>`;
+                             // Student View: Check if already rated
+                             if (session.is_rated) {
+                                 actionsHtml = '<span style="color:#059669; font-weight:bold;">✓ Rated</span>';
+                             } else {
+                                 actionsHtml = `<a href="/session/rate/${session.session_id}" class="btn-action">Rate Teacher</a>`;
+                             }
                          } else {
+                             // Teacher View
                              actionsHtml = '<span>✅ Complete</span>';
                          }
-                    } 
+                    }
                     // --- DENIED/CANCELLED ---
                     else {
                         actionsHtml = '<span>---</span>';

@@ -42,3 +42,20 @@ a { color: #2563eb; }
 button { cursor: pointer; }
 input, select, textarea { display: block; width: 100%; max-width: 400px; margin-bottom: 15px; padding: 8px; }
 label { font-weight: bold; margin-top: 10px; display: block; }
+
+/* Fix for Rating Radio Buttons */
+.radio-option {
+    display: flex;             /* Forces button and text into a row */
+    align-items: center;       /* Vertically centers them */
+    margin-bottom: 10px;       /* Adds space between the "Yes" and "No" options */
+    font-size: 1.1em;
+    cursor: pointer;
+}
+
+/* Add a little space between the circle and the text */
+.radio-option input[type="radio"] {
+    margin-right: 10px;        
+    transform: scale(1.2);     /* Optional: Makes the button slightly bigger/easier to click */
+    width: auto;               /* Overrides any global 'width: 100%' you might have on inputs */
+    display: inline-block;     /* Ensures it doesn't try to take up a full line */
+}

@@ -889,10 +889,8 @@ app.get('/session/rate/:id', isAuthenticated, async (req, res) => {
     }
 });
 
-// GET /api/sessions/user/:id - Fetches all sessions (as requester or provider) for a specific user
+// GET /api/sessions/user/:id - Fetches all sessions (UPDATED with is_rated check)
 app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
-    // NOTE: This route REQUIRES authentication middleware
-    
     const { id } = req.params;
 
     try {
@@ -907,11 +905,15 @@ app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
                 s.requester_id,
                 p.user_name AS provider_name,
                 r.user_name AS requester_name,
-                sk.skill_name AS skill_name
+                sk.skill_name AS skill_name,
+                -- CHECK IF RATED: Returns true if a rating exists for this session
+                (CASE WHEN rt.rating_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_rated
             FROM Sessions s
             JOIN Users p ON s.provider_id = p.user_id 
             JOIN Users r ON s.requester_id = r.user_id 
             JOIN Skills sk ON s.skill_taught_id = sk.skill_id
+            -- LEFT JOIN ensures we get the session even if no rating exists yet
+            LEFT JOIN Ratings rt ON s.session_id = rt.session_id
             WHERE s.provider_id = $1 OR s.requester_id = $1
             ORDER BY s.session_date_time DESC`,
             [id]
