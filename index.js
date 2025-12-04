@@ -247,6 +247,75 @@ app.get('/profile/edit', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /profile/view/:id - Renders a public profile page for any user
+app.get('/profile/view/:id', isAuthenticated, async (req, res) => {
+    const targetUserId = req.params.id;
+
+    try {
+        // We run multiple queries in parallel for efficiency
+        const [userRes, offeredRes, soughtRes, ratingRes] = await Promise.all([
+            // 1. Basic User Info
+            pool.query(
+                'SELECT user_id, user_name, grade_level, school_college, email FROM Users WHERE user_id = $1', 
+                [targetUserId]
+            ),
+            // 2. Skills Offered (with location flags)
+            pool.query(
+                `SELECT s.skill_name, uso.is_virtual_only, uso.is_inperson_only 
+                 FROM User_Skills_Offered uso
+                 JOIN Skills s ON uso.skill_id = s.skill_id
+                 WHERE uso.user_id = $1`, 
+                [targetUserId]
+            ),
+            // 3. Skills Sought
+            pool.query(
+                `SELECT s.skill_name 
+                 FROM User_Skills_Sought uss
+                 JOIN Skills s ON uss.skill_id = s.skill_id
+                 WHERE uss.user_id = $1`, 
+                [targetUserId]
+            ),
+            // 4. Ratings Summary
+            pool.query(
+                `SELECT 
+                    COUNT(rating_id) AS total, 
+                    SUM(CASE WHEN like_status = TRUE THEN 1 ELSE 0 END) AS likes 
+                 FROM Ratings WHERE ratee_id = $1`, 
+                [targetUserId]
+            )
+        ]);
+
+        if (userRes.rows.length === 0) {
+            return res.status(404).send("User not found.");
+        }
+
+        const targetUser = userRes.rows[0];
+        const ratings = ratingRes.rows[0];
+        
+        // Calculate a simple percentage (avoid divide by zero)
+        const likePercentage = ratings.total > 0 
+            ? Math.round((ratings.likes / ratings.total) * 100) 
+            : 0;
+
+        res.render('profile_view', {
+            pageTitle: `${targetUser.user_name}'s Profile`,
+            user: req.user,       // The person LOOKING at the profile (for nav bar)
+            profile: targetUser,  // The person BEING looked at
+            skillsOffered: offeredRes.rows,
+            skillsSought: soughtRes.rows,
+            ratingStats: {
+                count: ratings.total,
+                likes: ratings.likes,
+                percent: likePercentage
+            }
+        });
+
+    } catch (error) {
+        console.error('Error loading profile view:', error.message);
+        res.status(500).send('Error loading profile.');
+    }
+});
+
 // GET /api/user/profile/:id - Fetches full profile details for editing
 app.get('/api/user/profile/:id', isAuthenticated, async (req, res) => {
     // SECURITY NOTE: In a final check, you must add logic here: 

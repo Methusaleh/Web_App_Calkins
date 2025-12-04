@@ -20,6 +20,8 @@
     </style>
 </head>
 <body>
+    <div id="toast-container"></div>
+
     <main>
         <div style="margin-bottom: 20px;">
             <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
@@ -46,6 +48,35 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        window.isProcessing = false;
+
+        // --- Toast Notification Helper ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            
+            // 1. Create the toast element
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+
+            // 2. Add to DOM
+            container.appendChild(toast);
+
+            // 3. Trigger Animation (needs a tiny delay to allow DOM render)
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            // 4. Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                // Wait for fade out transition to finish before removing from DOM
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
         // Current User ID from server session
         const currentUserId = '<%= user.id %>'; 
 
@@ -60,7 +91,16 @@
                 tbody.innerHTML = ''; 
 
                 if (sessions.length === 0) {
-                    document.getElementById('loadingMsg').textContent = "You have no sessions yet.";
+                    // Inject HTML with a helpful message and link
+                    document.getElementById('loadingMsg').innerHTML = `
+                        <div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
+                            <h3>You haven't scheduled any sessions yet!</h3>
+                            <p style="color: #666; margin-bottom: 20px;">Find a tutor or offer your skills to get started.</p>
+                            <a href="/session/request" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Find a Tutor</a>
+                            <span style="margin: 0 10px;">or</span>
+                            <a href="/profile/edit" style="color: #2563eb;">Update Profile</a>
+                        </div>
+                    `;
                     return;
                 }
 
@@ -144,13 +184,27 @@
             }
         }
 
-        // --- Action Functions ---
+        // Global flag to prevent double clicks (Initialize this at top of script)
+        window.isProcessing = false; 
 
         async function confirmSession(id, locationType) {
+            // 1. CHECK LOCK: If already busy, stop immediately.
+            if (window.isProcessing) return; 
+            
+            // 2. SET LOCK: Claim processing rights
+            window.isProcessing = true;
+
             let meetUrl = null;
+
+            // 3. Handle URL Prompt (Specific Logic)
             if (locationType === 'Online') {
                 meetUrl = prompt("Please enter the Google Meet URL for this session:");
-                if (meetUrl === null) return; // User hit cancel on prompt
+                
+                if (meetUrl === null) {
+                    // Important: If they hit Cancel, we must UNLOCK before returning!
+                    window.isProcessing = false; 
+                    return; 
+                }
             }
 
             try {
@@ -158,27 +212,69 @@
                     sessionId: id,
                     meetingUrl: meetUrl
                 });
-                alert("Session Confirmed!");
-                fetchSessions(); // Reload table to show new status
+                
+                showToast("Session Confirmed!", "success");
+                fetchSessions(); 
+
             } catch (err) { 
-                alert(err.response?.data?.message || 'Error confirming session'); 
+                const msg = err.response?.data?.message || 'Error confirming session';
+                showToast(msg, "error"); 
+                
+            } finally {
+                // 4. RELEASE LOCK: Always unlock, success or failure
+                window.isProcessing = false;
             }
         }
 
         async function denySession(id) {
-            if(!confirm("Are you sure you want to cancel/deny this session?")) return;
+            // 1. CHECK LOCK
+            if (window.isProcessing) return;
+            window.isProcessing = true;
+
+            // 2. CONFIRMATION CHECK
+            // If they click "Cancel", we must UNLOCK before stopping.
+            if(!confirm("Are you sure you want to cancel/deny this session?")) {
+                window.isProcessing = false; // <--- Critical unlock
+                return;
+            }
+
             try {
                 await axios.post('/api/sessions/deny', { sessionId: id, reason: 'User action' });
+                
+                showToast("Session cancelled successfully.", "success");
                 fetchSessions();
-            } catch (err) { alert('Error processing request'); }
+            } catch (err) { 
+                const msg = err.response?.data?.message || 'Error processing request';
+                showToast(msg, "error");
+            } finally {
+                // 3. RELEASE LOCK (Runs on success OR error)
+                window.isProcessing = false;
+            }
         }
 
         async function completeSession(id) {
-            if(!confirm("Mark this session as fully completed?")) return;
+            // 1. CHECK LOCK
+            if (window.isProcessing) return;
+            window.isProcessing = true;
+
+            // 2. CONFIRMATION CHECK
+            if(!confirm("Mark this session as fully completed?")) {
+                 window.isProcessing = false; // <--- Critical unlock
+                 return;
+            }
+            
             try {
                 await axios.post('/api/sessions/complete', { sessionId: id });
+                
+                showToast("Session marked as complete!", "success");
                 fetchSessions();
-            } catch (err) { alert('Error completing session'); }
+            } catch (err) { 
+                const msg = err.response?.data?.message || 'Error completing session';
+                showToast(msg, "error"); 
+            } finally {
+                // 3. RELEASE LOCK
+                window.isProcessing = false;
+            }
         }
     </script>
 </body>

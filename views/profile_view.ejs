@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= pageTitle %></title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <style>
+        .profile-header { background: #f4f4f4; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-right: 5px; color: white; }
+        .badge-virtual { background-color: #3b82f6; } /* Blue */
+        .badge-person { background-color: #10b981; }  /* Green */
+        .badge-both { background-color: #8b5cf6; }    /* Purple */
+        
+        .skill-list { list-style: none; padding: 0; }
+        .skill-item { background: white; border: 1px solid #eee; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
+        
+        .rating-box { background: #fffbeb; border: 1px solid #fcd34d; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        .rating-score { font-size: 2em; font-weight: bold; color: #d97706; }
+    </style>
+</head>
+<body>
+    <main>
+        <div style="margin-bottom: 20px;">
+            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
+        </div>
+
+        <div class="profile-header">
+            <h1><%= profile.user_name %></h1>
+            <p><strong>Grade:</strong> <%= profile.grade_level || 'Not specified' %> | <strong>School:</strong> <%= profile.school_college || 'Not specified' %></p>
+            <p><strong>Email:</strong> <%= profile.email %></p>
+            
+            <% if (user.id === profile.user_id) { %>
+                <a href="/profile/edit" style="background: #333; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">Edit My Profile</a>
+            <% } else { %>
+                <a href="/session/request" style="background: #2563eb; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">Request Session</a>
+            <% } %>
+        </div>
+
+        <div class="rating-box">
+            <h3>Community Reputation</h3>
+            <% if (ratingStats.count > 0) { %>
+                <div class="rating-score"><%= ratingStats.percent %>% Positive</div>
+                <p><%= ratingStats.likes %> Likes from <%= ratingStats.count %> Total Sessions</p>
+            <% } else { %>
+                <p>No ratings yet. Be the first to learn from <%= profile.user_name %>!</p>
+            <% } %>
+        </div>
+
+        <hr>
+
+        <h2>Skills I Teach</h2>
+        <% if (skillsOffered.length === 0) { %>
+            <p>No skills listed yet.</p>
+        <% } else { %>
+            <ul class="skill-list">
+                <% skillsOffered.forEach(skill => { %>
+                    <li class="skill-item">
+                        <strong><%= skill.skill_name %></strong>
+                        
+                        <span>
+                            <% if (skill.is_virtual_only) { %>
+                                <span class="badge badge-virtual">Virtual Only</span>
+                            <% } else if (skill.is_inperson_only) { %>
+                                <span class="badge badge-person">In-Person Only</span>
+                            <% } else { %>
+                                <span class="badge badge-both">Virtual & In-Person</span>
+                            <% } %>
+                        </span>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } %>
+
+        <hr>
+
+        <h2>Skills I Want to Learn</h2>
+        <% if (skillsSought.length === 0) { %>
+            <p>Not currently seeking any specific skills.</p>
+        <% } else { %>
+            <ul>
+                <% skillsSought.forEach(skill => { %>
+                    <li><%= skill.skill_name %></li>
+                <% }) %>
+            </ul>
+        <% } %>
+
+    </main>
+</body>
+</html>

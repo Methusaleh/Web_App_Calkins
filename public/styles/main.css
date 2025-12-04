@@ -1,0 +1,32 @@
+/* --- Toast Notification Container --- */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+/* --- The Toast Itself --- */
+.toast {
+    min-width: 250px;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 4px;
+    color: white;
+    font-family: sans-serif;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+/* --- Animation State: Visible --- */
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --- Toast Types (Colors) --- */
+.toast-success { background-color: #10b981; } /* Green */
+.toast-error { background-color: #ef4444; }   /* Red */
+.toast-info { background-color: #3b82f6; }    /* Blue */
