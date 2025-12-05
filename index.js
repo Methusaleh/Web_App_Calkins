@@ -235,6 +235,82 @@ app.get('/register', async (req, res) => {
     });
 });
 
+// GET /api/messages/thread/:otherUserId - Fetches conversation with another user
+app.get('/api/messages/thread/:otherUserId', isAuthenticated, async (req, res) => {
+    const currentUserId = req.user.id;
+    const otherUserId = req.params.otherUserId;
+
+    try {
+        // Query to get messages where (Sender=Me AND Receiver=Other) OR (Sender=Other AND Receiver=Me)
+        // Ordered by time so the chat reads correctly top-to-bottom
+        const result = await pool.query(
+            `SELECT 
+                m.message_id,
+                m.sender_id,
+                m.receiver_id,
+                m.message_text,
+                m.timestamp,
+                u.user_name AS sender_name
+             FROM Messages m
+             JOIN Users u ON m.sender_id = u.user_id
+             WHERE (m.sender_id = $1 AND m.receiver_id = $2)
+                OR (m.sender_id = $2 AND m.receiver_id = $1)
+             ORDER BY m.timestamp ASC`,
+            [currentUserId, otherUserId]
+        );
+
+        res.status(200).json({ messages: result.rows });
+
+    } catch (error) {
+        console.error('Error fetching messages:', error.message);
+        res.status(500).json({ message: 'Server error fetching messages.' });
+    }
+});
+
+// POST /api/messages/send - Sends a direct message
+app.post('/api/messages/send', isAuthenticated, async (req, res) => {
+    const { receiverId, messageText } = req.body;
+    const senderId = req.user.id;
+
+    if (!receiverId || !messageText) {
+        return res.status(400).json({ message: 'Receiver ID and message text are required.' });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO Messages (sender_id, receiver_id, message_text)
+             VALUES ($1, $2, $3)
+             RETURNING message_id, timestamp`,
+            [senderId, receiverId, messageText]
+        );
+
+        res.status(201).json({ 
+            message: 'Message sent successfully.', 
+            sentMessage: result.rows[0] 
+        });
+
+    } catch (error) {
+        console.error('Error sending message:', error.message);
+        res.status(500).json({ message: 'Server error sending message.' });
+    }
+});
+
+// GET /messages/:id - Renders the chat page with a specific user
+app.get('/messages/:id', isAuthenticated, async (req, res) => {
+    const otherUserId = req.params.id;
+    try {
+        // Fetch the other user's name just for the page title/header
+        const userRes = await pool.query('SELECT user_name FROM Users WHERE user_id = $1', [otherUserId]);
+        if (userRes.rows.length === 0) return res.status(404).send('User not found');
+
+        res.render('chat', {
+            pageTitle: `Chat with ${userRes.rows[0].user_name}`,
+            user: req.user,
+            otherUser: { id: otherUserId, name: userRes.rows[0].user_name }
+        });
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
 // GET /profile/edit - Renders the user's profile editing page
 app.get('/profile/edit', isAuthenticated, async (req, res) => {
     try {

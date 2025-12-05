@@ -32,6 +32,14 @@
                 <a href="/profile/edit" style="background: #333; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">Edit My Profile</a>
             <% } else { %>
                 <a href="/session/request" style="background: #2563eb; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">Request Session</a>
+
+                <a href="/messages/<%= profile.user_id %>" style="background: #059669; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; margin-left: 10px;">
+                    💬 Message
+                </a>
+                
+                <button onclick="reportUser('<%= profile.user_id %>')" style="background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 4px; margin-left: 10px; cursor: pointer;">
+                    ⚠️ Report User
+                </button>
             <% } %>
         </div>
 
@@ -84,5 +92,28 @@
         <% } %>
 
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        
+        async function reportUser(reportedUserId) {
+            // 1. Get the reason
+            const reason = prompt("Please describe the issue with this user:");
+            
+            if (!reason) return; // User cancelled
+
+            // 2. Submit to API
+            try {
+                const response = await axios.post('/api/reports', {
+                    reportedUserId: reportedUserId,
+                    reason: reason
+                });
+                
+                alert(response.data.message); // Or use showToast() if available on this page
+            } catch (error) {
+                console.error(error);
+                alert("Failed to submit report. Please try again.");
+            }
+        }
+    </script>
 </body>
 </html>
