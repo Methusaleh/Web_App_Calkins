@@ -311,6 +311,49 @@ app.get('/messages/:id', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
+// GET /messages - Renders the Inbox page
+app.get('/messages', isAuthenticated, (req, res) => {
+    res.render('inbox', { 
+        pageTitle: 'My Inbox', 
+        user: req.user 
+    });
+});
+
+// GET /api/messages/inbox - Fetches list of active conversations
+app.get('/api/messages/inbox', isAuthenticated, async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        // Complex Query: Finds the latest message per conversation partner
+        const result = await pool.query(
+            `SELECT DISTINCT ON (other_user_id)
+                other_user_id,
+                other_user_name,
+                message_text,
+                timestamp
+            FROM (
+                SELECT 
+                    CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END AS other_user_id,
+                    CASE WHEN m.sender_id = $1 THEN r.user_name ELSE s.user_name END AS other_user_name,
+                    m.message_text,
+                    m.timestamp
+                FROM Messages m
+                JOIN Users s ON m.sender_id = s.user_id
+                JOIN Users r ON m.receiver_id = r.user_id
+                WHERE m.sender_id = $1 OR m.receiver_id = $1
+                ORDER BY m.timestamp DESC
+            ) AS recent_msgs`,
+            [userId]
+        );
+
+        res.status(200).json({ conversations: result.rows });
+
+    } catch (error) {
+        console.error('Error fetching inbox:', error.message);
+        res.status(500).json({ message: 'Server error loading inbox.' });
+    }
+});
+
 // GET /profile/edit - Renders the user's profile editing page
 app.get('/profile/edit', isAuthenticated, async (req, res) => {
     try {

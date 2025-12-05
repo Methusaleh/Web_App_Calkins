@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= pageTitle %></title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <style>
+        .inbox-list { list-style: none; padding: 0; }
+        .inbox-item { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; border: 1px solid #eee; 
+            padding: 15px; margin-bottom: 10px; border-radius: 6px;
+            text-decoration: none; color: inherit; transition: background 0.2s;
+        }
+        .inbox-item:hover { background: #f9fafb; border-color: #ccc; }
+        .inbox-name { font-weight: bold; font-size: 1.1em; color: #2563eb; }
+        .inbox-preview { color: #666; font-size: 0.9em; margin-top: 5px; }
+        .inbox-time { font-size: 0.8em; color: #999; white-space: nowrap; }
+    </style>
+</head>
+<body>
+    <main>
+        <div style="margin-bottom: 20px;">
+            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
+        </div>
+
+        <h1>My Inbox</h1>
+        <p id="loadingMsg">Loading conversations...</p>
+        <ul id="inboxList" class="inbox-list"></ul>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const list = document.getElementById('inboxList');
+            const loading = document.getElementById('loadingMsg');
+
+            try {
+                const response = await axios.get('/api/messages/inbox');
+                const conversations = response.data.conversations;
+
+                loading.style.display = 'none';
+
+                if (conversations.length === 0) {
+                    list.innerHTML = '<p>No messages yet.</p>';
+                    return;
+                }
+
+                conversations.forEach(convo => {
+                    const time = new Date(convo.timestamp).toLocaleDateString() + ' ' + new Date(convo.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    const item = `
+                        <a href="/messages/${convo.other_user_id}" class="inbox-item">
+                            <div>
+                                <div class="inbox-name">${convo.other_user_name}</div>
+                                <div class="inbox-preview">${convo.message_text.substring(0, 50)}...</div>
+                            </div>
+                            <div class="inbox-time">${time}</div>
+                        </a>
+                    `;
+                    list.innerHTML += item;
+                });
+
+            } catch (error) {
+                console.error(error);
+                loading.textContent = 'Error loading messages.';
+            }
+        });
+    </script>
+</body>
+</html>
