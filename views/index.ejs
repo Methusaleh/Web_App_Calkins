@@ -70,6 +70,30 @@
                 <% } %>
             </div>
             
+            <% if (topTeachers && topTeachers.length > 0) { %>
+                <div style="margin-top: 40px;">
+                    <h2>🏆 Top Rated Teachers</h2>
+                    <p style="color: #666; margin-bottom: 15px;">Community favorites based on student feedback.</p>
+                    
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <% topTeachers.forEach(teacher => { %>
+                            <div style="border: 1px solid #eee; padding: 20px; border-radius: 8px; background: white; width: 200px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;">
+                                <img src="https://api.dicebear.com/7.x/<%= teacher.avatar_style || 'bottts' %>/svg?seed=<%= teacher.user_name %>" 
+                                     alt="Teacher Avatar"
+                                     style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px; background-color: #f3f4f6;">
+                                
+                                <div style="font-weight: bold; color: #333; font-size: 1.1em;"><%= teacher.user_name %></div>
+                                
+                                <div style="color: #059669; font-size: 0.9em; margin-top: 5px; font-weight: bold;">
+                                    ❤️ <%= teacher.like_count %> Likes
+                                </div>
+                                
+                                <a href="/profile/view/<%= teacher.user_id %>" style="display: inline-block; margin-top: 15px; padding: 5px 10px; background-color: #eff6ff; color: #2563eb; border-radius: 4px; text-decoration: none; font-size: 0.85em; font-weight: bold;">View Profile</a>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
             <br>
             <button id="logoutButton">Log Out Securely</button>
 

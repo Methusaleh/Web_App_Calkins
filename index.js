@@ -194,6 +194,9 @@ app.get('/', async (req, res) => {
     let dbVersion = 'Not connected to database';
     let dbStatus = 'Failed';
     let tablesStatus = 'Failed';
+    
+    // Initialize container for our new feature
+    let topTeachers = [];
 
     const tablesReady = await createTables();
     const user = req.session.user || null; 
@@ -204,9 +207,23 @@ app.get('/', async (req, res) => {
             const result = await pool.query('SELECT version()');
             dbVersion = result.rows[0].version;
             dbStatus = 'Success';
+
+            // --- NEW: Fetch Top 3 Teachers for the Dashboard ---
+            // This query joins Users with Ratings to count "Likes"
+            const topTeachersRes = await pool.query(
+                `SELECT u.user_id, u.user_name, u.avatar_style, COUNT(r.rating_id) as like_count
+                 FROM Users u
+                 JOIN Ratings r ON u.user_id = r.ratee_id
+                 WHERE r.like_status = TRUE
+                 GROUP BY u.user_id, u.user_name, u.avatar_style
+                 ORDER BY like_count DESC
+                 LIMIT 3`
+            );
+            topTeachers = topTeachersRes.rows;
+
         } catch (error) {
-            console.error('CRITICAL: Database Version Query Failed:', error.message);
-            dbVersion = `Version Query Error: ${error.message}`;
+            console.error('Database Error:', error.message);
+            dbVersion = `Error: ${error.message}`;
         }
     } else {
         dbVersion = 'Failed to create tables. Check server logs.';
@@ -217,6 +234,7 @@ app.get('/', async (req, res) => {
         dbVersion: dbVersion,
         tablesStatus: tablesStatus,
         user: user,
+        topTeachers: topTeachers // <--- Pass the new data to the view
     });
 });
 
