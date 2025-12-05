@@ -1552,6 +1552,52 @@ app.get('/api/admin/reports', isAdmin, async (req, res) => {
     }
 });
 
+// POST /api/admin/users/:id/toggle_role - Promotes or Demotes a user
+app.post('/api/admin/users/:id/toggle_role', isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.user.id;
+
+    // Security Check: Prevent an admin from demoting themselves (which would lock them out)
+    if (parseInt(id) === adminId) {
+        return res.status(400).json({ message: 'You cannot revoke your own admin rights.' });
+    }
+
+    try {
+        // 1. Get current status
+        const userCheck = await pool.query('SELECT is_admin FROM Users WHERE user_id = $1', [id]);
+        
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const currentStatus = userCheck.rows[0].is_admin;
+        const newStatus = !currentStatus; // Toggle logic
+
+        // 2. Update the user
+        await pool.query(
+            'UPDATE Users SET is_admin = $1 WHERE user_id = $2',
+            [newStatus, id]
+        );
+
+        // 3. Log the action
+        const actionType = newStatus ? 'Promote to Admin' : 'Revoke Admin';
+        await pool.query(
+            `INSERT INTO Admin_Logs (admin_id, action_type, target_table, target_id)
+             VALUES ($1, $2, 'Users', $3);`,
+            [adminId, actionType, id]
+        );
+
+        res.status(200).json({ 
+            message: `User ${newStatus ? 'promoted' : 'demoted'} successfully.`,
+            isAdmin: newStatus
+        });
+
+    } catch (error) {
+        console.error('Admin Toggle Role Error:', error.message);
+        res.status(500).json({ message: 'Server error while toggling role.' });
+    }
+});
+
 //updates the status of a specific report(Admin-only)
 app.post('/api/admin/report/:id/status', isAdmin, async (req, res) => {
     
