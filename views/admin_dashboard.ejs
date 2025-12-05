@@ -170,18 +170,25 @@
                 tbody.innerHTML = '';
 
                 data.forEach(u => {
-                    // Logic for the Promote/Demote Button
-                    // If they are an Admin, show "Demote" (Red/Warning style)
-                    // If they are a User, show "Promote" (Blue/Action style)
-                    const roleBtn = u.is_admin 
-                        ? `<button class="btn-small" style="background:#fcd34d; color:#92400e; margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Demote</button>`
-                        : `<button class="btn-small" style="background:#bfdbfe; color:#1e40af; margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Make Admin</button>`;
-
-                    const deleteBtn = `<button class="btn-small btn-danger" onclick="deleteUser(${u.user_id})">Delete</button>`;
-
-                    // Don't show buttons for yourself (safety check matches backend)
+                    let actions = '';
+                    const isRootAdmin = (u.user_id === 1); // Identify User 1
                     const isMe = (u.user_id == '<%= user.id %>');
-                    const actions = isMe ? '<span style="color:#888; font-style:italic;">Current User</span>' : `${roleBtn} ${deleteBtn}`;
+
+                    if (isRootAdmin) {
+                        // VISUAL PROTECTION: Show a badge instead of buttons
+                        actions = '<span style="color:#d97706; font-weight:bold; border:1px solid #d97706; padding:2px 6px; border-radius:4px;">ROOT ADMIN</span>';
+                    } else if (isMe) {
+                        actions = '<span style="color:#888; font-style:italic;">Current User</span>';
+                    } else {
+                        // Normal Logic
+                        const roleBtn = u.is_admin 
+                            ? `<button class="btn-small" style="background:#fcd34d; color:#92400e; margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Demote</button>`
+                            : `<button class="btn-small" style="background:#bfdbfe; color:#1e40af; margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Make Admin</button>`;
+                        
+                        const deleteBtn = `<button class="btn-small btn-danger" onclick="deleteUser(${u.user_id})">Delete</button>`;
+                        
+                        actions = `${roleBtn} ${deleteBtn}`;
+                    }
 
                     const row = `<tr>
                         <td>${u.user_id}</td>
