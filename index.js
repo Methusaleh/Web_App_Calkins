@@ -354,6 +354,49 @@ app.get('/api/messages/inbox', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /api/search - Search for users or skills
+app.get('/api/search', isAuthenticated, async (req, res) => {
+    const { q } = req.query; // The search term (e.g., ?q=python)
+
+    if (!q || q.length < 2) {
+        return res.json({ results: [] });
+    }
+
+    try {
+        // Search logic: Find Users by Name OR Users who offer a Skill matching the term
+        const result = await pool.query(
+            `SELECT 
+                u.user_id, 
+                u.user_name, 
+                u.grade_level,
+                'user' as type
+             FROM Users u
+             WHERE u.user_name ILIKE $1 AND u.is_admin = FALSE
+             
+             UNION ALL
+             
+             SELECT 
+                u.user_id, 
+                u.user_name, 
+                s.skill_name as extra_info,
+                'skill_match' as type
+             FROM Users u
+             JOIN User_Skills_Offered uso ON u.user_id = uso.user_id
+             JOIN Skills s ON uso.skill_id = s.skill_id
+             WHERE s.skill_name ILIKE $1
+             
+             LIMIT 10;`,
+            [`%${q}%`]
+        );
+
+        res.json({ results: result.rows });
+
+    } catch (error) {
+        console.error('Search error:', error.message);
+        res.status(500).json({ message: 'Search failed' });
+    }
+});
+
 // GET /profile/edit - Renders the user's profile editing page
 app.get('/profile/edit', isAuthenticated, async (req, res) => {
     try {

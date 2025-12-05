@@ -80,9 +80,19 @@
     <div id="toast-container"></div>
 
     <main>
-        <div style="margin-bottom: 20px;">
-            <a href="/profile/view/<%= otherUser.id %>" style="text-decoration: none; color: #333; font-weight: bold;">
-                &larr; Back to Profile
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="display: flex; gap: 15px;">
+                <a href="/messages" style="text-decoration: none; color: #333; font-weight: bold;">
+                    &larr; Back to Inbox
+                </a>
+                <span style="color: #ccc;">|</span>
+                <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">
+                    🏠 Dashboard
+                </a>
+            </div>
+            
+            <a href="/profile/view/<%= otherUser.id %>" style="font-size: 0.9em; color: #2563eb; text-decoration: none;">
+                View <%= otherUser.name %>'s Profile &rarr;
             </a>
         </div>
 
