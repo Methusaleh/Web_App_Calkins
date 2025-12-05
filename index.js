@@ -356,19 +356,18 @@ app.get('/api/messages/inbox', isAuthenticated, async (req, res) => {
 
 // GET /api/search - Search for users or skills
 app.get('/api/search', isAuthenticated, async (req, res) => {
-    const { q } = req.query; // The search term (e.g., ?q=python)
+    const { q } = req.query; 
 
     if (!q || q.length < 2) {
         return res.json({ results: [] });
     }
 
     try {
-        // Search logic: Find Users by Name OR Users who offer a Skill matching the term
         const result = await pool.query(
             `SELECT 
                 u.user_id, 
                 u.user_name, 
-                u.grade_level,
+                u.grade_level as sub_text,  -- <--- ALIAS 1: Matches the second query
                 'user' as type
              FROM Users u
              WHERE u.user_name ILIKE $1 AND u.is_admin = FALSE
@@ -378,7 +377,7 @@ app.get('/api/search', isAuthenticated, async (req, res) => {
              SELECT 
                 u.user_id, 
                 u.user_name, 
-                s.skill_name as extra_info,
+                s.skill_name as sub_text,   -- <--- ALIAS 2: Matches the first query
                 'skill_match' as type
              FROM Users u
              JOIN User_Skills_Offered uso ON u.user_id = uso.user_id
