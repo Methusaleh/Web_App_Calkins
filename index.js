@@ -163,12 +163,10 @@ async function createTables() {
         );
 
         CREATE TABLE IF NOT EXISTS session (
-            sid varchar NOT NULL COLLATE "default",
+            sid varchar NOT NULL COLLATE "default" PRIMARY KEY,
             sess json NOT NULL,
             expire timestamp(6) with time zone NOT NULL
         );
-
-        ALTER TABLE session ADD CONSTRAINT session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE;
         
         CREATE TABLE IF NOT EXISTS Admin_Logs (
             log_id SERIAL PRIMARY KEY,
