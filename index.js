@@ -250,7 +250,8 @@ app.get('/api/messages/thread/:otherUserId', isAuthenticated, async (req, res) =
                 m.receiver_id,
                 m.message_text,
                 m.timestamp,
-                u.user_name AS sender_name
+                u.user_name AS sender_name,
+                u.avatar_style AS sender_avatar_style
              FROM Messages m
              JOIN Users u ON m.sender_id = u.user_id
              WHERE (m.sender_id = $1 AND m.receiver_id = $2)
@@ -511,14 +512,12 @@ app.get('/api/user/profile/:id', isAuthenticated, async (req, res) => {
 
 // PUT /api/user/profile/:id - Updates basic profile info
 app.put('/api/user/profile/:id', isAuthenticated, async (req, res) => {
-    // Security Check: Ensure the user is updating their OWN profile
     if (req.user.id !== parseInt(req.params.id)) {
         return res.status(403).json({ message: 'Access denied. You can only update your own profile.' });
     }
 
-    const { userName, gradeLevel } = req.body;
+    const { userName, gradeLevel, avatarStyle } = req.body; // <--- Added avatarStyle
 
-    // Basic Validation
     if (!userName) {
         return res.status(400).json({ message: 'Full Name is required.' });
     }
@@ -527,19 +526,21 @@ app.put('/api/user/profile/:id', isAuthenticated, async (req, res) => {
         const result = await pool.query(
             `UPDATE Users 
              SET user_name = $1, 
-                 grade_level = $2
-             WHERE user_id = $3
-             RETURNING user_id, user_name, email, grade_level;`,
-            [userName, gradeLevel || null, req.params.id]
+                 grade_level = $2,
+                 avatar_style = $3  -- <--- Update the style
+             WHERE user_id = $4
+             RETURNING user_id, user_name, email, grade_level, avatar_style;`,
+            [userName, gradeLevel || null, avatarStyle || 'bottts', req.params.id]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Update the session data so the UI reflects changes immediately without re-login
+        // Update the session data immediately so the UI/Header reflects changes without re-login
         req.session.user.name = result.rows[0].user_name;
-        req.session.save(); // Ensure session is saved before response
+        req.session.user.avatarStyle = result.rows[0].avatar_style; // <--- Update Session
+        req.session.save(); 
 
         res.status(200).json({ 
             message: 'Profile updated successfully.', 
@@ -600,7 +601,8 @@ app.post('/api/reports', isAuthenticated, async (req, res) => {
 });
 
 app.post('/api/register', async (req, res) => {
-    const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege } = req.body;
+    // Add avatarStyle to destructuring
+    const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege, avatarStyle } = req.body;
 
     if (!email || !password || !userName || !dateOfBirth) { 
         return res.status(400).json({ message: 'Missing required registration fields.' });
@@ -623,10 +625,12 @@ app.post('/api/register', async (req, res) => {
                 date_of_birth, 
                 grade_level, 
                 school_college, 
-                is_admin
-            ) VALUES ($1, $2, $3, $4, $5, $6, FALSE) 
+                is_admin,
+                avatar_style  -- <--- NEW COLUMN
+            ) VALUES ($1, $2, $3, $4, $5, $6, FALSE, $7) -- <--- Added $7
              RETURNING user_id, user_name, email;`,
-            [email, hashedPassword, userName, dateOfBirth, gradeLevel || null, schoolCollege || null]
+            // Use the submitted style or default to 'bottts'
+            [email, hashedPassword, userName, dateOfBirth, gradeLevel || null, schoolCollege || null, avatarStyle || 'bottts']
         );
 
         const newUser = result.rows[0];
@@ -654,8 +658,9 @@ app.post('/api/login', async (req, res) => {
     }
 
     try {
+        // Added 'avatar_style' to the SELECT list
         const result = await pool.query(
-            'SELECT user_id, email, password_hash, user_name, is_admin FROM Users WHERE email = $1', 
+            'SELECT user_id, email, password_hash, user_name, is_admin, avatar_style FROM Users WHERE email = $1', 
             [email]
         );
 
@@ -668,12 +673,13 @@ app.post('/api/login', async (req, res) => {
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
         if (passwordMatch) {
-            //creates session and stores user info in session
+            // Store the avatarStyle in the session
             req.session.user = {
                 id: user.user_id,
                 name: user.user_name,
                 email: user.email,
-                isAdmin: user.is_admin
+                isAdmin: user.is_admin,
+                avatarStyle: user.avatar_style || 'bottts' // <--- NEW PROPERTY
             };
             
             res.status(200).json({

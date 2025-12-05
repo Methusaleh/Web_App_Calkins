@@ -37,6 +37,15 @@
             <label for="schoolCollege">School/College (Optional)</label>
             <input type="text" id="regSchoolCollege">
 
+            <label for="avatarStyle">Choose Avatar Style:</label>
+            <select id="regAvatarStyle">
+                <option value="bottts">🤖 Robots (Default)</option>
+                <option value="avataaars">🧑 Humans</option>
+                <option value="identicon">🔷 Geometric Shapes</option>
+                <option value="initials">🔠 Initials</option>
+                <option value="micah">🎨 Hand Drawn</option>
+            </select>
+
             <button type="submit">Register Account</button>
         </form>
         
@@ -60,6 +69,7 @@
             const gradeLevel = document.getElementById('regGradeLevel').value;
             const schoolCollege = document.getElementById('regSchoolCollege').value;
             const messageArea = document.getElementById('messageArea');
+            const avatarStyle = document.getElementById('regAvatarStyle').value;
             messageArea.textContent = ''; 
 
             // Client-Side Validation: Password Match
@@ -77,7 +87,8 @@
                     userName: userName,
                     dateOfBirth: dateOfBirth,
                     gradeLevel: gradeLevel, // Will be null if empty string submitted (due to Express logic)
-                    schoolCollege: schoolCollege // Will be null if empty string submitted
+                    schoolCollege: schoolCollege, // Will be null if empty string submitted
+                    avatarStyle: avatarStyle // Avatar style selection
                 });
 
                 // Handle Success (Status 201 Created)

@@ -22,6 +22,15 @@
             <label for="gradeLevel">Grade Level:</label>
             <input type="text" id="gradeLevel" value="<%= user.gradeLevel || '' %>">
 
+            <label for="avatarStyle">Avatar Style:</label>
+            <select id="avatarStyle">
+                <option value="bottts" <%= user.avatarStyle === 'bottts' ? 'selected' : '' %>>🤖 Robots</option>
+                <option value="avataaars" <%= user.avatarStyle === 'avataaars' ? 'selected' : '' %>>🧑 Humans</option>
+                <option value="identicon" <%= user.avatarStyle === 'identicon' ? 'selected' : '' %>>🔷 Shapes</option>
+                <option value="initials" <%= user.avatarStyle === 'initials' ? 'selected' : '' %>>🔠 Initials</option>
+                <option value="micah" <%= user.avatarStyle === 'micah' ? 'selected' : '' %>>🎨 Hand Drawn</option>
+            </select>
+
             <button type="submit">Update Profile</button>
         </form>
 
@@ -297,11 +306,13 @@
             const userName = document.getElementById('userName').value;
             const gradeLevel = document.getElementById('gradeLevel').value;
             const messageArea = document.getElementById('messageArea');
+            const avatarStyle = document.getElementById('avatarStyle').value;
 
             try {
                 const response = await axios.put(`/api/user/profile/${userId}`, {
                     userName: userName,
-                    gradeLevel: gradeLevel
+                    gradeLevel: gradeLevel,
+                    avatarStyle: avatarStyle
                 });
 
                 messageArea.textContent = response.data.message;

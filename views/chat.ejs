@@ -156,7 +156,8 @@
                     // Generate Avatar Seed based on who sent it
                     // Note: We need the sender's NAME for the seed. 
                     // Your API currently sends 'sender_name' in the JSON! Perfect!
-                    const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${msg.sender_name}`;
+                    const style = msg.sender_avatar_style || 'bottts';
+                    const avatarUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${msg.sender_name}`;
 
                     // Layout: Avatar on left for received, right for sent
                     const avatarImg = `<img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; margin: 0 10px; align-self: flex-end;">`;
