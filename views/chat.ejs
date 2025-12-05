@@ -148,14 +148,27 @@
                 // Note: In a real app, you'd only append new messages to save performance.
                 // For simplicity here, we re-render the list to ensure sync.
                 chatWindow.innerHTML = messages.map(msg => {
-                    // Check if I sent it or they sent it
-                    const type = (String(msg.sender_id) === String(myUserId)) ? 'msg-sent' : 'msg-received';
+                    // Determine who sent it
+                    const isMe = (String(msg.sender_id) === String(myUserId));
+                    const type = isMe ? 'msg-sent' : 'msg-received';
                     const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     
+                    // Generate Avatar Seed based on who sent it
+                    // Note: We need the sender's NAME for the seed. 
+                    // Your API currently sends 'sender_name' in the JSON! Perfect!
+                    const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${msg.sender_name}`;
+
+                    // Layout: Avatar on left for received, right for sent
+                    const avatarImg = `<img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; margin: 0 10px; align-self: flex-end;">`;
+
                     return `
-                        <div class="message-bubble ${type}">
-                            ${msg.message_text}
-                            <span class="timestamp">${time}</span>
+                        <div style="display:flex; margin-bottom: 10px; justify-content: ${isMe ? 'flex-end' : 'flex-start'};">
+                            ${!isMe ? avatarImg : ''}
+                            <div class="message-bubble ${type}">
+                                ${msg.message_text}
+                                <span class="timestamp">${time}</span>
+                            </div>
+                            ${isMe ? avatarImg : ''}
                         </div>
                     `;
                 }).join('');

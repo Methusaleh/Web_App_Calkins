@@ -10,7 +10,18 @@
         
         <% if (user) { %>
         
-            <h1>Welcome Back, <%= user.name %>!</h1>
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=<%= user.name %>" 
+                     alt="Avatar" 
+                     style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #2563eb;">
+                
+                <div>
+                    <h1 style="margin: 0;">Welcome, <%= user.name %>!</h1>
+                    <span style="color: #666; font-size: 0.9em;">
+                        <%= user.isAdmin ? '🛡️ Administrator' : '🎓 Student' %>
+                    </span>
+                </div>
+            </div>
             <p>You are logged in as a <%= user.isAdmin ? 'Platform Administrator' : 'Student User' %>.</p>
 
             <hr>

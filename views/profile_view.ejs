@@ -24,7 +24,17 @@
         </div>
 
         <div class="profile-header">
-            <h1><%= profile.user_name %></h1>
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=<%= profile.user_name %>" 
+                     alt="Profile Avatar" 
+                     style="width: 80px; height: 80px; border-radius: 50%; background: white; padding: 5px;">
+                
+                <div>
+                    <h1 style="margin: 0; line-height: 1;"><%= profile.user_name %></h1>
+                    <p style="margin: 5px 0 0 0; color: #666;"><%= profile.email %></p>
+                </div>
+            </div>
+            
             <p><strong>Grade:</strong> <%= profile.grade_level || 'Not specified' %> | <strong>School:</strong> <%= profile.school_college || 'Not specified' %></p>
             <p><strong>Email:</strong> <%= profile.email %></p>
             
