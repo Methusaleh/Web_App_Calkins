@@ -6,9 +6,9 @@
     <style>
         .profile-header { background: #f4f4f4; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-right: 5px; color: white; }
-        .badge-virtual { background-color: #3b82f6; } /* Blue */
-        .badge-person { background-color: #10b981; }  /* Green */
-        .badge-both { background-color: #8b5cf6; }    /* Purple */
+        .badge-virtual { background-color: #3b82f6; } 
+        .badge-person { background-color: #10b981; }  
+        .badge-both { background-color: #8b5cf6; }    
         
         .skill-list { list-style: none; padding: 0; }
         .skill-item { background: white; border: 1px solid #eee; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
@@ -18,11 +18,11 @@
     </style>
 </head>
 <body>
-    <main>
-        <div style="margin-bottom: 20px;">
-            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
-        </div>
+    <div id="toast-container"></div>
 
+    <%- include('partials/navbar') %>
+
+    <main>
         <div class="profile-header">
             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
                 <img src="https://api.dicebear.com/7.x/<%= user.avatarStyle %>/svg?seed=<%= user.name %>" 
@@ -36,7 +36,6 @@
             </div>
             
             <p><strong>Grade:</strong> <%= profile.grade_level || 'Not specified' %> | <strong>School:</strong> <%= profile.school_college || 'Not specified' %></p>
-            <p><strong>Email:</strong> <%= profile.email %></p>
             
             <% if (user.id === profile.user_id) { %>
                 <a href="/profile/edit" style="background: #333; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">Edit My Profile</a>
@@ -73,7 +72,6 @@
                 <% skillsOffered.forEach(skill => { %>
                     <li class="skill-item">
                         <strong><%= skill.skill_name %></strong>
-                        
                         <span>
                             <% if (skill.is_virtual_only) { %>
                                 <span class="badge badge-virtual">Virtual Only</span>
@@ -104,7 +102,20 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        
+        // --- 3. ADD Toast Helper Function ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         async function reportUser(reportedUserId) {
             // 1. Get the reason
             const reason = prompt("Please describe the issue with this user:");
@@ -118,10 +129,11 @@
                     reason: reason
                 });
                 
-                alert(response.data.message); // Or use showToast() if available on this page
+                // Use showToast instead of alert for better UX
+                showToast(response.data.message, "success");
             } catch (error) {
                 console.error(error);
-                alert("Failed to submit report. Please try again.");
+                showToast("Failed to submit report. Please try again.", "error");
             }
         }
     </script>

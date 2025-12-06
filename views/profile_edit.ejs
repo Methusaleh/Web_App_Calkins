@@ -5,23 +5,16 @@
     <link rel="stylesheet" href="/styles/main.css">
 </head>
 <body>
+    <div id="toast-container"></div>
+    
+    <%- include('partials/navbar') %>
+
     <main>
-        <div style="margin-bottom: 20px;">
-            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">
-                &larr; Back to Dashboard
-            </a>
-        </div>
-        
         <h1>Edit Profile for <%= user.name %></h1>
 
         <form id="profileForm">
             <h2>Personal Information</h2>
-            <label for="userName">Full Name:</label>
-            <input type="text" id="userName" value="<%= user.name %>" required>
-
-            <label for="gradeLevel">Grade Level:</label>
-            <input type="text" id="gradeLevel" value="<%= user.gradeLevel || '' %>">
-
+            
             <label for="avatarStyle">Avatar Style:</label>
             <select id="avatarStyle">
                 <option value="bottts" <%= user.avatarStyle === 'bottts' ? 'selected' : '' %>>🤖 Robots</option>
@@ -30,6 +23,12 @@
                 <option value="initials" <%= user.avatarStyle === 'initials' ? 'selected' : '' %>>🔠 Initials</option>
                 <option value="micah" <%= user.avatarStyle === 'micah' ? 'selected' : '' %>>🎨 Hand Drawn</option>
             </select>
+
+            <label for="userName">Full Name:</label>
+            <input type="text" id="userName" value="<%= user.name %>" required>
+
+            <label for="gradeLevel">Grade Level:</label>
+            <input type="text" id="gradeLevel" value="<%= user.gradeLevel || '' %>">
 
             <button type="submit">Update Profile</button>
         </form>
@@ -55,24 +54,18 @@
                             <tr style="border-bottom: 1px solid #eee;">
                                 <td>
                                     <input type="checkbox" 
-                                        class="skill-toggle" 
-                                        data-id="<%= skill.skill_id %>"
-                                        id="skill_<%= skill.skill_id %>">
+                                           class="skill-toggle" 
+                                           data-id="<%= skill.skill_id %>"
+                                           id="skill_<%= skill.skill_id %>">
                                 </td>
-                                
                                 <td>
                                     <label for="skill_<%= skill.skill_id %>"><%= skill.skill_name %></label>
                                 </td>
-
                                 <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="loc-virtual" 
-                                        data-id="<%= skill.skill_id %>">
+                                    <input type="checkbox" class="loc-virtual" data-id="<%= skill.skill_id %>">
                                 </td>
                                 <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="loc-inperson" 
-                                        data-id="<%= skill.skill_id %>">
+                                    <input type="checkbox" class="loc-inperson" data-id="<%= skill.skill_id %>">
                                 </td>
                             </tr>
                         <% }) %>
@@ -80,9 +73,7 @@
                 </table>
             </div>
             
-            <p style="font-size: 0.9em; color: #666;">
-                * If you check both Virtual and In-Person, you will appear in searches for both.
-            </p>
+            <p style="font-size: 0.9em; color: #666;">* If you check both Virtual and In-Person, you will appear in searches for both.</p>
 
             <button type="submit" style="margin-top: 15px;">Save Offered Skills</button>
         </form>
@@ -108,24 +99,18 @@
                             <tr style="border-bottom: 1px solid #eee;">
                                 <td>
                                     <input type="checkbox" 
-                                        class="seek-toggle" 
-                                        data-id="<%= skill.skill_id %>"
-                                        id="seek_skill_<%= skill.skill_id %>">
+                                           class="seek-toggle" 
+                                           data-id="<%= skill.skill_id %>"
+                                           id="seek_skill_<%= skill.skill_id %>">
                                 </td>
-                                
                                 <td>
                                     <label for="seek_skill_<%= skill.skill_id %>"><%= skill.skill_name %></label>
                                 </td>
-
                                 <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="seek-virtual" 
-                                        data-id="<%= skill.skill_id %>">
+                                    <input type="checkbox" class="seek-virtual" data-id="<%= skill.skill_id %>">
                                 </td>
                                 <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="seek-inperson" 
-                                        data-id="<%= skill.skill_id %>">
+                                    <input type="checkbox" class="seek-inperson" data-id="<%= skill.skill_id %>">
                                 </td>
                             </tr>
                         <% }) %>
@@ -144,46 +129,39 @@
             <button type="submit">Suggest Skill</button>
         </form>
         
-        <p id="messageArea" style="margin-top: 15px;"></p>
-        
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // --- Client-Side JavaScript Logic ---
-        
-        const userId = '<%= user.id %>'; // Pass the user's ID for API submissions
+        const userId = '<%= user.id %>';
 
-        // 1. Logic for Saving Skills Offered (POST /api/user/skills/offer)
+        // --- Toast Helper ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- 1. Save Offered Skills ---
         document.getElementById('skillOfferForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const skillsToSubmit = [];
-            
-            // Iterate over all the "Master" checkboxes (the ones that enable the skill)
             const skillCheckboxes = document.querySelectorAll('.skill-toggle');
 
             skillCheckboxes.forEach(checkbox => {
                 if (checkbox.checked) {
                     const id = checkbox.getAttribute('data-id');
-                    
-                    // Find the corresponding location checkboxes for this skill ID
-                    // We use the data-id attribute to match them up
                     const canDoVirtual = document.querySelector(`.loc-virtual[data-id="${id}"]`).checked;
                     const canDoInPerson = document.querySelector(`.loc-inperson[data-id="${id}"]`).checked;
 
-                    // VALIDATION: User must select at least one location if they offer the skill
-                    if (!canDoVirtual && !canDoInPerson) {
-                        // Default to BOTH if they forgot to check one, or handle as error. 
-                        // Let's assume flexibility (both false means flexible in your DB logic? 
-                        // NO, your DB logic uses 'is_virtual_only'. 
-                        // Let's translate strictly.)
-                    }
-
-                    // TRANSLATION LOGIC (UI -> DB Schema)
-                    // DB Column: is_virtual_only (TRUE means they CANNOT do in-person)
-                    // DB Column: is_inperson_only (TRUE means they CANNOT do virtual)
-                    
                     let isVirtualOnly = false;
                     let isInPersonOnly = false;
 
@@ -192,7 +170,7 @@
                     } else if (!canDoVirtual && canDoInPerson) {
                         isInPersonOnly = true;
                     } 
-                    // If both are checked, both flags remain FALSE (meaning no restriction).
+                    // If both are checked (or neither), defaults remain false (flexible)
 
                     skillsToSubmit.push({
                         skillId: id,
@@ -204,43 +182,28 @@
 
             try {
                 const response = await axios.post('/api/user/skills/offer', {
-                    userId: userId, // Defined globally in your previous script block
+                    userId: userId,
                     skills: skillsToSubmit
                 });
-                
-                const msgArea = document.getElementById('messageArea');
-                msgArea.textContent = response.data.message;
-                msgArea.style.color = 'green';
-                
+                showToast(response.data.message, "success");
             } catch (error) {
-                const msgArea = document.getElementById('messageArea');
-                msgArea.textContent = 'Failed to save skills. Please try again.';
-                msgArea.style.color = 'red';
-                console.error(error);
+                showToast('Failed to save skills. Please try again.', "error");
             }
         });
 
-        // 2. Logic for Saving Skills Sought (POST /api/user/skills/seek)
+        // --- 2. Save Sought Skills ---
         document.getElementById('skillSeekForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const skillsToSubmit = [];
-            
-            // Iterate over the "Seek" toggle checkboxes
             const skillCheckboxes = document.querySelectorAll('.seek-toggle');
 
             skillCheckboxes.forEach(checkbox => {
                 if (checkbox.checked) {
                     const id = checkbox.getAttribute('data-id');
-                    
-                    // Find corresponding location prefs using the data-id
                     const wantVirtual = document.querySelector(`.seek-virtual[data-id="${id}"]`).checked;
                     const wantInPerson = document.querySelector(`.seek-inperson[data-id="${id}"]`).checked;
 
-                    // TRANSLATION LOGIC (UI -> DB Schema)
-                    // is_virtual_only = TRUE (I ONLY want virtual)
-                    // is_inperson_only = TRUE (I ONLY want in-person)
-                    
                     let isVirtualOnly = false;
                     let isInPersonOnly = false;
 
@@ -249,7 +212,6 @@
                     } else if (!wantVirtual && wantInPerson) {
                         isInPersonOnly = true;
                     } 
-                    // If both are checked (or neither), we assume flexibility (both flags false)
 
                     skillsToSubmit.push({
                         skillId: id,
@@ -261,27 +223,19 @@
 
             try {
                 const response = await axios.post('/api/user/skills/seek', {
-                    userId: userId, // Uses the global userId defined earlier
+                    userId: userId,
                     skills: skillsToSubmit
                 });
-                
-                const msgArea = document.getElementById('messageArea');
-                msgArea.textContent = response.data.message;
-                msgArea.style.color = 'green';
-                
+                showToast(response.data.message, "success");
             } catch (error) {
-                const msgArea = document.getElementById('messageArea');
-                msgArea.textContent = 'Failed to save sought skills. Please try again.';
-                msgArea.style.color = 'red';
-                console.error(error);
+                showToast('Failed to save sought skills.', "error");
             }
         });
         
-        // 2. Logic for Suggesting a Skill (POST /api/skills/suggest)
+        // --- 3. Suggest Skill ---
         document.getElementById('suggestSkillForm').addEventListener('submit', async (e) => {
              e.preventDefault();
              const skillName = document.getElementById('newSkillName').value;
-
              if (!skillName) return;
 
              try {
@@ -289,23 +243,20 @@
                     skillName: skillName,
                     userId: userId 
                 });
-                document.getElementById('messageArea').textContent = response.data.message;
-                document.getElementById('messageArea').style.color = 'green';
+                showToast(response.data.message, "success");
                 document.getElementById('newSkillName').value = '';
             } catch (error) {
-                const msg = error.response.data.message || 'Error suggesting skill.';
-                document.getElementById('messageArea').textContent = msg;
-                document.getElementById('messageArea').style.color = 'red';
+                const msg = error.response?.data?.message || 'Error suggesting skill.';
+                showToast(msg, "error");
             }
         });
 
-                // 3. Logic for Basic Profile Update (PUT /api/user/profile/:id)
+        // --- 4. Basic Profile Update ---
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const userName = document.getElementById('userName').value;
             const gradeLevel = document.getElementById('gradeLevel').value;
-            const messageArea = document.getElementById('messageArea');
             const avatarStyle = document.getElementById('avatarStyle').value;
 
             try {
@@ -314,21 +265,14 @@
                     gradeLevel: gradeLevel,
                     avatarStyle: avatarStyle
                 });
-
-                messageArea.textContent = response.data.message;
-                messageArea.style.color = 'green';
-                
-                // Optional: Update the header greeting dynamically
-                // document.querySelector('h1').textContent = `Edit Profile for ${userName}`;
-
+                showToast(response.data.message, "success");
             } catch (error) {
                 const msg = error.response?.data?.message || 'Failed to update profile.';
-                messageArea.textContent = msg;
-                messageArea.style.color = 'red';
+                showToast(msg, "error");
             }
         });
 
-       // 3. Pre-fill Skills on Page Load
+        // --- 5. Pre-fill Skills on Page Load ---
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const response = await axios.get(`/api/user/skills/${userId}`);
@@ -364,7 +308,7 @@
             } catch (error) {
                 console.error('Failed to load existing skills:', error);
             }
-        }); // <--- This is the ONLY closing sequence needed for DOMContentLoaded
+        }); 
     </script>
 </body>
 </html>

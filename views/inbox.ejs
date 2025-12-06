@@ -18,11 +18,10 @@
     </style>
 </head>
 <body>
-    <main>
-        <div style="margin-bottom: 20px;">
-            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
-        </div>
+    <div id="toast-container"></div>
+    <%- include('partials/navbar') %>
 
+    <main>
         <h1>My Inbox</h1>
         <p id="loadingMsg">Loading conversations...</p>
         <ul id="inboxList" class="inbox-list"></ul>
@@ -30,6 +29,19 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('inboxList');
             const loading = document.getElementById('loadingMsg');
@@ -63,6 +75,7 @@
             } catch (error) {
                 console.error(error);
                 loading.textContent = 'Error loading messages.';
+                showToast("Failed to load inbox.", "error");
             }
         });
     </script>

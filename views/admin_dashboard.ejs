@@ -4,27 +4,27 @@
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css">
     <style>
-        .admin-section { margin-bottom: 40px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+        .admin-section { margin-bottom: 40px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         th { background-color: #eaeaea; }
-        .btn-small { padding: 4px 8px; font-size: 0.8em; cursor: pointer; }
-        .btn-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .btn-success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .btn-small { padding: 4px 8px; font-size: 0.8em; cursor: pointer; border-radius: 4px; border: none; color: white; }
+        .btn-danger { background-color: #ef4444; }
+        .btn-success { background-color: #10b981; }
+        .btn-promote { background-color: #3b82f6; } /* Blue */
+        .btn-demote { background-color: #f59e0b; } /* Amber */
     </style>
 </head>
 <body>
-    <main>
-        <div style="margin-bottom: 20px;">
-            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Main Dashboard</a>
-        </div>
+    <div id="toast-container"></div>
+    <%- include('partials/navbar') %>
 
+    <main>
         <h1>Admin Control Panel</h1>
         <p>Monitor activity, manage users, and curate skills.</p>
 
         <div class="admin-section">
             <h2>1. Pending Skill Suggestions</h2>
-            <p>Review skills suggested by users.</p>
             <table id="suggestionsTable">
                 <thead>
                     <tr>
@@ -40,7 +40,6 @@
 
         <div class="admin-section">
             <h2>2. Security Reports</h2>
-            <p>Monitor user reports and update their status.</p>
             <table id="reportsTable">
                 <thead>
                     <tr>
@@ -57,7 +56,6 @@
 
         <div class="admin-section">
             <h2>3. User Database</h2>
-            <p>View all registered users and remove accounts if necessary.</p>
             <table id="usersTable">
                 <thead>
                     <tr>
@@ -75,7 +73,7 @@
         <div class="admin-section">
             <h2>4. Add Master Skill Manually</h2>
             <form id="addSkillForm" style="display:flex; gap:10px;">
-                <input type="text" id="newMasterSkill" placeholder="New Skill Name" required style="flex-grow:1;">
+                <input type="text" id="newMasterSkill" placeholder="New Skill Name" required style="flex-grow:1; margin-bottom: 0;">
                 <button type="submit">Add Skill</button>
             </form>
         </div>
@@ -84,23 +82,34 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // --- INITIAL LOAD ---
+        // --- Toast Helper ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             fetchSuggestions();
             fetchReports();
             fetchUsers();
         });
 
-        // --- 1. SKILL SUGGESTIONS LOGIC ---
+        // --- SKILL SUGGESTIONS ---
         async function fetchSuggestions() {
             const tbody = document.getElementById('suggestionsBody');
             try {
                 const res = await axios.get('/api/admin/suggestions');
                 const data = res.data.suggestions;
                 tbody.innerHTML = '';
-
                 if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No pending suggestions.</td></tr>'; return; }
-
                 data.forEach(item => {
                     const row = `<tr>
                         <td>${item.suggested_skill_name}</td>
@@ -113,26 +122,25 @@
                     </tr>`;
                     tbody.innerHTML += row;
                 });
-            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="4">Error loading data.</td></tr>'; }
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="4">Error loading data.</td></tr>'; }
         }
 
         async function processSuggestion(id, action) {
             try {
                 await axios.post('/api/admin/suggestions/action', { suggestionId: id, action: action });
-                fetchSuggestions(); // Refresh table
-            } catch (err) { alert('Error processing suggestion.'); }
+                showToast("Suggestion processed.", "success");
+                fetchSuggestions();
+            } catch (err) { showToast('Error processing suggestion.', "error"); }
         }
 
-        // --- 2. REPORTS LOGIC ---
+        // --- REPORTS ---
         async function fetchReports() {
             const tbody = document.getElementById('reportsBody');
             try {
                 const res = await axios.get('/api/admin/reports');
                 const data = res.data.reports;
                 tbody.innerHTML = '';
-
                 if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="5">No active reports.</td></tr>'; return; }
-
                 data.forEach(item => {
                     const row = `<tr>
                         <td><strong>${item.reported_user_name}</strong> (ID: ${item.reported_user_id})</td>
@@ -140,7 +148,7 @@
                         <td>${item.reporter_name}</td>
                         <td style="font-weight:bold;">${item.report_status}</td>
                         <td>
-                            <select onchange="updateReportStatus(${item.report_id}, this.value)">
+                            <select onchange="updateReportStatus(${item.report_id}, this.value)" style="margin-bottom:0;">
                                 <option value="">-- Change Status --</option>
                                 <option value="Under Review">Under Review</option>
                                 <option value="Action Taken">Action Taken</option>
@@ -150,43 +158,39 @@
                     </tr>`;
                     tbody.innerHTML += row;
                 });
-            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="5">Error loading reports.</td></tr>'; }
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="5">Error loading reports.</td></tr>'; }
         }
 
         async function updateReportStatus(id, newStatus) {
             if(!newStatus) return;
             try {
                 await axios.post(`/api/admin/report/${id}/status`, { newStatus: newStatus });
-                fetchReports(); // Refresh table
-            } catch (err) { alert('Error updating status.'); }
+                showToast("Report status updated.", "success");
+                fetchReports();
+            } catch (err) { showToast('Error updating status.', "error"); }
         }
 
-        // --- 3. USER MANAGEMENT LOGIC ---
+        // --- USERS ---
         async function fetchUsers() {
             const tbody = document.getElementById('usersBody');
             try {
                 const res = await axios.get('/api/admin/users');
                 const data = res.data.users;
                 tbody.innerHTML = '';
-
                 data.forEach(u => {
                     let actions = '';
-                    const isRootAdmin = (u.user_id === 1); // Identify User 1
+                    const isRootAdmin = (u.user_id === 1);
                     const isMe = (u.user_id == '<%= user.id %>');
 
                     if (isRootAdmin) {
-                        // VISUAL PROTECTION: Show a badge instead of buttons
                         actions = '<span style="color:#d97706; font-weight:bold; border:1px solid #d97706; padding:2px 6px; border-radius:4px;">ROOT ADMIN</span>';
                     } else if (isMe) {
                         actions = '<span style="color:#888; font-style:italic;">Current User</span>';
                     } else {
-                        // Normal Logic
                         const roleBtn = u.is_admin 
-                            ? `<button class="btn-small" style="background:#fcd34d; color:#92400e; margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Demote</button>`
-                            : `<button class="btn-small" style="background:#bfdbfe; color:#1e40af; margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Make Admin</button>`;
-                        
+                            ? `<button class="btn-small btn-demote" style="margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Demote</button>`
+                            : `<button class="btn-small btn-promote" style="margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Make Admin</button>`;
                         const deleteBtn = `<button class="btn-small btn-danger" onclick="deleteUser(${u.user_id})">Delete</button>`;
-                        
                         actions = `${roleBtn} ${deleteBtn}`;
                     }
 
@@ -199,41 +203,37 @@
                     </tr>`;
                     tbody.innerHTML += row;
                 });
-            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="5">Error loading users.</td></tr>'; }
-        }
-
-        async function deleteUser(id) {
-            if(!confirm(`Are you sure you want to permanently DELETE User ID ${id}? This cannot be undone.`)) return;
-            try {
-                await axios.delete(`/api/admin/users/${id}`);
-                fetchUsers(); // Refresh list
-            } catch (err) { alert('Error deleting user.'); }
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="5">Error loading users.</td></tr>'; }
         }
 
         async function toggleAdmin(id) {
-            if(!confirm(`Are you sure you want to change the Admin status for User ID ${id}?`)) return;
-            
+            if(!confirm(`Change Admin status for User ID ${id}?`)) return;
             try {
                 const res = await axios.post(`/api/admin/users/${id}/toggle_role`);
-                alert(res.data.message);
-                fetchUsers(); // Refresh the list to see the change
-            } catch (err) {
-                const msg = err.response?.data?.message || 'Error updating role.';
-                alert(msg);
-            }
+                showToast(res.data.message, "success");
+                fetchUsers();
+            } catch (err) { showToast(err.response?.data?.message || 'Error updating role.', "error"); }
         }
 
-        // --- 4. MANUAL ADD SKILL LOGIC ---
+        async function deleteUser(id) {
+            if(!confirm(`Permanently DELETE User ID ${id}? This cannot be undone.`)) return;
+            try {
+                await axios.delete(`/api/admin/users/${id}`);
+                showToast("User deleted successfully.", "success");
+                fetchUsers();
+            } catch (err) { showToast('Error deleting user.', "error"); }
+        }
+
+        // --- MANUAL ADD SKILL ---
         document.getElementById('addSkillForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('newMasterSkill').value;
             try {
                 await axios.post('/api/skills', { skillName: name });
-                alert('Skill added to master list!');
+                showToast('Skill added to master list!', "success");
                 document.getElementById('newMasterSkill').value = '';
-            } catch (err) { alert('Error adding skill (it may already exist).'); }
+            } catch (err) { showToast('Error adding skill (it may already exist).', "error"); }
         });
-
     </script>
 </body>
 </html>

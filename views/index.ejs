@@ -5,57 +5,43 @@
     <link rel="stylesheet" href="/styles/main.css">
 </head>
 <body>
+    <div id="toast-container"></div>
+    
+    <%- include('partials/navbar') %>
     
     <main>
         
         <% if (user) { %>
         
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                <img src="https://api.dicebear.com/7.x/<%= user.avatarStyle %>/svg?seed=<%= user.name %>" 
-                     alt="Avatar" 
-                     style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #2563eb;">
-                
-                <div>
-                    <h1 style="margin: 0;">Welcome, <%= user.name %>!</h1>
-                    <span style="color: #666; font-size: 0.9em;">
-                        <%= user.isAdmin ? '🛡️ Administrator' : '🎓 Student' %>
-                    </span>
-                </div>
-            </div>
-            <p>You are logged in as a <%= user.isAdmin ? 'Platform Administrator' : 'Student User' %>.</p>
-
-            <hr>
             <div style="margin-bottom: 30px; position: relative;">
                 <h3>🔍 Find Tutors & Students</h3>
                 <input type="text" id="searchInput" placeholder="Search by Name (e.g. 'Test User') or Skill (e.g. 'Math')..." 
                        style="width: 100%; padding: 12px; font-size: 1em; border: 2px solid #ddd; border-radius: 6px;">
                 
                 <div id="searchResults" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; max-height: 300px; overflow-y: auto;">
-                    </div>
+                </div>
             </div>
 
             <h2>Quick Links</h2>
 
             <div class="dashboard-actions" style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; background: white;">
                     <h3>👤 Your Profile</h3>
                     <p>Keep your skills and details up to date.</p>
-                    
                     <a href="/profile/edit" style="display:inline-block; margin-top:10px; font-weight:bold;">Edit Profile &rarr;</a>
-                    
                     <br>
                     <a href="/profile/view/<%= user.id %>" style="display:inline-block; margin-top:10px; color: #555; font-size: 0.9em; text-decoration: none;">
                         👁️ View Public Profile
                     </a>
                 </div>
 
-                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; background: white;">
                     <h3>📅 Your Sessions</h3>
                     <p>View upcoming lessons or check requests.</p>
                     <a href="/my_sessions" style="display:inline-block; margin-top:10px; font-weight:bold;">Manage Sessions &rarr;</a>
                 </div>
 
-                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; background: white;">
                     <h3>💬 My Messages</h3>
                     <p>Chat with your tutors and students.</p>
                     <a href="/messages" style="display:inline-block; margin-top:10px; font-weight:bold;">Open Inbox &rarr;</a>
@@ -70,7 +56,7 @@
                 <% } %>
             </div>
             
-            <% if (topTeachers && topTeachers.length > 0) { %>
+            <% if (typeof topTeachers !== 'undefined' && topTeachers.length > 0) { %>
                 <div style="margin-top: 40px;">
                     <h2>🏆 Top Rated Teachers</h2>
                     <p style="color: #666; margin-bottom: 15px;">Community favorites based on student feedback.</p>
@@ -94,43 +80,39 @@
                     </div>
                 </div>
             <% } %>
-            <br>
-            <button id="logoutButton">Log Out Securely</button>
 
         <% } else { %>
 
-            <h1>Welcome to SkillSwap</h1>
-            <h2>Log In</h2>
+            <div style="max-width: 400px; margin: 50px auto; padding: 30px; border: 1px solid #ddd; border-radius: 8px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h1 style="text-align: center; color: var(--primary-color);">SkillSwap</h1>
+                <h2 style="text-align: center; font-size: 1.2em; color: #666; margin-bottom: 20px;">Log In</h2>
 
-            <form id="loginForm">
-                <input type="email" id="email" placeholder="Email" required>
-                <input type="password" id="password" placeholder="Password" required>
-                <button type="submit">Log In</button>
-            </form>
-            
-            <p id="messageArea" style="color: red; margin-top: 10px;"></p>
+                <form id="loginForm">
+                    <input type="email" id="email" placeholder="Email" required>
+                    <input type="password" id="password" placeholder="Password" required>
+                    <button type="submit" style="width: 100%;">Log In</button>
+                </form>
+                
+                <p id="messageArea" style="color: red; margin-top: 10px; text-align: center;"></p>
 
-            <hr>
-            
-            <p>New Student? <a href="/register">Create an Account Here</a></p>
+                <hr style="margin: 20px 0;">
+                
+                <p style="text-align: center;">New Student? <a href="/register" style="font-weight: bold;">Create an Account</a></p>
+            </div>
 
-        <% } %> </main>
+        <% } %>
+
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
         // --- Client-Side JavaScript Logic ---
-        
         const messageArea = document.getElementById('messageArea');
 
-        // Logic runs only if the login form exists (i.e., if the user is NOT logged in)
+        // Logic runs only if the login form exists
         if (document.getElementById('loginForm')) {
             document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
-        }
-
-        // Logic runs only if the logout button exists (i.e., if the user IS logged in)
-        if (document.getElementById('logoutButton')) {
-            document.getElementById('logoutButton').addEventListener('click', handleLogout);
         }
 
         async function handleLoginSubmit(event) {
@@ -141,7 +123,6 @@
             messageArea.textContent = ''; 
 
             try {
-                // Axios POST request to the Express API
                 const response = await axios.post('/api/login', {
                     email: email,
                     password: password
@@ -150,8 +131,6 @@
                 if (response.status === 200) {
                     messageArea.textContent = 'Login Successful! Redirecting...';
                     messageArea.style.color = 'green';
-                    
-                    // On success, simply reload the page to load the authenticated dashboard view
                     window.location.href = '/'; 
                 }
 
@@ -167,30 +146,12 @@
             }
         }
 
-        async function handleLogout() {
-             try {
-                // Axios POST request to the secure logout endpoint
-                const response = await axios.post('/api/logout');
-
-                if (response.status === 200) {
-                    // On successful destruction of the server session, redirect to the login page
-                    window.location.href = '/'; 
-                }
-
-            } catch (error) {
-                alert('Logout failed. Please try clearing cookies manually.');
-                console.error('Logout Failed:', error);
-            }
-        }
-
-        // --- SEARCH LOGIC ---
+        // --- SEARCH LOGIC (Only runs if authenticated/search bar exists) ---
         const searchInput = document.getElementById('searchInput');
         const resultsBox = document.getElementById('searchResults');
 
         if (searchInput) {
-            // Debounce: Wait 300ms after typing stops to send request
             let timeout = null;
-
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(timeout);
                 const query = e.target.value.trim();
@@ -204,17 +165,12 @@
                     try {
                         const response = await axios.get(`/api/search?q=${encodeURIComponent(query)}`);
                         const results = response.data.results;
-                        
                         resultsBox.innerHTML = '';
                         
                         if (results.length === 0) {
                             resultsBox.innerHTML = '<div style="padding:15px; color:#666;">No results found.</div>';
                         } else {
                             results.forEach(item => {
-                                // Logic: If it's a skill match, show "Teaches: [Skill]". 
-                                // If it's a user match, show "Grade: [Grade]"
-                                // We now grab BOTH from the unified 'sub_text' property.
-                                
                                 const subText = item.type === 'skill_match' 
                                     ? `Teaches: <strong>${item.sub_text}</strong>` 
                                     : `Grade: ${item.sub_text || 'N/A'}`;
@@ -235,14 +191,10 @@
                             });
                         }
                         resultsBox.style.display = 'block';
-
-                    } catch (err) {
-                        console.error("Search failed", err);
-                    }
+                    } catch (err) { console.error("Search failed", err); }
                 }, 300);
             });
 
-            // Close dropdown if clicking outside
             document.addEventListener('click', (e) => {
                 if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
                     resultsBox.style.display = 'none';
