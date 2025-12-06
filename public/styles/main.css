@@ -1,7 +1,162 @@
-/* --- Global Toast Notification Container --- */
+/* =========================================
+   1. VARIABLES & THEME CONFIGURATION
+   ========================================= */
+   :root {
+    /* Primary: Deep Blue (Trust, Professionalism) */
+    --primary-color: #2563eb; 
+    --primary-hover: #1d4ed8;
+    
+    /* Secondary: Teal/Green (Growth, Success) */
+    --secondary-color: #10b981;
+    
+    /* Accent: Amber/Orange (Energy, Action) */
+    --accent-color: #f59e0b;
+    
+    /* Neutral Scale */
+    --bg-body: #f3f4f6;       /* Light Gray Background */
+    --bg-card: #ffffff;       /* White Cards */
+    --text-main: #1f2937;     /* Dark Gray Text */
+    --text-muted: #6b7280;    /* Light Gray Text */
+    --border-color: #e5e7eb;  /* Subtle Borders */
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* =========================================
+   2. GLOBAL RESETS & LAYOUT
+   ========================================= */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    margin: 0; /* Reset margin for full-width navbar */
+    padding-top: 80px; /* Push content down so Navbar doesn't cover it */
+    line-height: 1.6;
+}
+
+main {
+    max-width: 1000px; /* Constrain content width, not the whole body */
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2, h3 { 
+    color: var(--text-main); 
+    margin-top: 0; 
+}
+
+a { 
+    text-decoration: none; 
+    color: var(--primary-color); 
+    transition: color 0.2s; 
+}
+
+a:hover { 
+    color: var(--primary-hover); 
+}
+
+button { 
+    cursor: pointer; 
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: var(--primary-hover);
+}
+
+input, select, textarea { 
+    display: block; 
+    width: 100%; 
+    max-width: 400px; 
+    margin-bottom: 15px; 
+    padding: 10px; 
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1em;
+}
+
+label { 
+    font-weight: bold; 
+    margin-top: 10px; 
+    display: block; 
+    color: var(--text-main);
+}
+
+/* =========================================
+   3. NAVBAR STYLING (NEW)
+   ========================================= */
+.navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 1000;
+    box-shadow: var(--shadow-sm);
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-link {
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.nav-link:hover, .nav-link.active {
+    background-color: #eff6ff; /* Light Blue Bg */
+    color: var(--primary-color);
+}
+
+/* Profile Dropdown / Avatar Area */
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 20px;
+    border-left: 1px solid var(--border-color);
+}
+
+.nav-avatar {
+    width: 35px; 
+    height: 35px; 
+    border-radius: 50%; 
+    border: 2px solid var(--primary-color);
+}
+
+/* =========================================
+   4. TOAST NOTIFICATIONS (EXISTING)
+   ========================================= */
 #toast-container {
     position: fixed;
-    top: 20px;
+    top: 80px; /* Adjusted to sit below the new Navbar */
     right: 20px;
     z-index: 9999;
     display: flex;
@@ -9,7 +164,6 @@
     gap: 10px;
 }
 
-/* --- The Toast Card --- */
 .toast {
     min-width: 250px;
     padding: 15px 20px;
@@ -25,37 +179,31 @@
     align-items: center;
 }
 
-/* --- Animation State: Visible --- */
 .toast.show {
     opacity: 1;
     transform: translateX(0);
 }
 
-/* --- Toast Types (Colors) --- */
-.toast-success { background-color: #10b981; border-left: 5px solid #047857; } /* Green */
-.toast-error { background-color: #ef4444; border-left: 5px solid #b91c1c; }   /* Red */
-.toast-info { background-color: #3b82f6; border-left: 5px solid #1d4ed8; }    /* Blue */
+.toast-success { background-color: var(--secondary-color); border-left: 5px solid #047857; }
+.toast-error { background-color: #ef4444; border-left: 5px solid #b91c1c; }
+.toast-info { background-color: var(--primary-color); border-left: 5px solid #1d4ed8; }
 
-/* --- Basic Layout Utilities (Optional, helps if you have no other CSS) --- */
-body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px; }
-a { color: #2563eb; }
-button { cursor: pointer; }
-input, select, textarea { display: block; width: 100%; max-width: 400px; margin-bottom: 15px; padding: 8px; }
-label { font-weight: bold; margin-top: 10px; display: block; }
-
+/* =========================================
+   5. COMPONENT FIXES (EXISTING)
+   ========================================= */
 /* Fix for Rating Radio Buttons */
 .radio-option {
-    display: flex;             /* Forces button and text into a row */
-    align-items: center;       /* Vertically centers them */
-    margin-bottom: 10px;       /* Adds space between the "Yes" and "No" options */
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
     font-size: 1.1em;
     cursor: pointer;
 }
 
-/* Add a little space between the circle and the text */
 .radio-option input[type="radio"] {
     margin-right: 10px;        
-    transform: scale(1.2);     /* Optional: Makes the button slightly bigger/easier to click */
-    width: auto;               /* Overrides any global 'width: 100%' you might have on inputs */
-    display: inline-block;     /* Ensures it doesn't try to take up a full line */
+    transform: scale(1.2);
+    width: auto;
+    display: inline-block;
+    margin-bottom: 0;
 }
