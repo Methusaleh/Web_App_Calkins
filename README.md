@@ -1,85 +1,58 @@
-# **Skill Swap Web App**
+# SkillSwap: Student Talent Exchange Platform
 
-A brief description of what this project does and who it's for. Explain the core problem it solves or the main functionality it provides.
+## What is this?
+SkillSwap is a web application designed to help students teach each other. It allows users to create a profile, list the skills they can teach (like math or guitar), and find other students who can teach them the things they want to learn. It connects students for either online or in-person learning sessions.
 
-## **Features**
+## Features
+We built this application to handle the entire process of organizing a tutoring session:
 
-* **Feature 1:** A short description of the first key feature.  
-* **Feature 2:** A short description of the second key feature.  
-* **Feature 3:** A short description of the third key feature.
+* Accounts: You can create a secure account, log in, and customize your profile with your grade, school, and a unique avatar.
+* Skills: You can check off skills you want to teach and skills you want to learn. You can even specify if you only teach online or in person.
+* Search: You can search for other students by their name or by the skill you need help with.
+* Scheduling: Students can request a session for a specific time and topic. Teachers can accept or deny these requests.
+* Online Meetings: If a session is online, the teacher can provide a Google Meet link directly through the app.
+* Messaging: Users can chat with each other to coordinate details before meeting.
+* Ratings: After a session is done, students can rate the teacher to help build a trusted community.
+* Admin Panel: Administrators have a special dashboard to manage users, review security reports, and approve new skills suggested by students.
 
-## **Technologies Used**
+## How it works (The Tech Stack)
+We built this project using standard web technologies:
 
-List the main technologies, frameworks, and libraries your project uses.
+* Node.js & Express: This runs our server and handles all the logic (the backend).
+* PostgreSQL: This is our database where we store users, sessions, and messages. We use Neon to host it online.
+* EJS: This is how we build our web pages. It lets us put data (like a user's name) directly into the HTML.
+* CSS: We wrote our own styles to make the site look clean and modern.
+* Axios: This helps our web pages talk to our server without reloading the page every time you click a button.
 
-* **Frontend:** (e.g., React, Vue, Angular, HTML/CSS/JS)  
-* **Backend:** (e.g., Node.js, Django, Ruby on Rails)  
-* **Database:** (e.g., PostgreSQL, MongoDB, MySQL)  
-* **Other:** (e.g., Tailwind CSS, Docker, Vite)
+## How to run this project
 
-## **Getting Started**
+If you want to run this code on your own computer, follow these steps:
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+1. Get the code
+Download this folder or clone the repository to your computer.
 
-### **Prerequisites**
+2. Install the tools
+Open your terminal (command line) in this folder and run this command to download the necessary libraries:
+npm install
 
-What things you need to install the software and how to install them.
+3. Set up your secrets
+Create a new file in this folder called .env. You need to put your database connection info here so the app knows where to save data. It should look like this:
 
-\# Example:  
-npm install npm@latest \-g
+DATABASE_URL=your_postgres_connection_string_here
+SESSION_SECRET=your_long_random_security_key_here
+PORT=8080
 
-### **Installation**
+4. Start the server
+Run this command to start the application:
+npm start
 
-1. Clone the repo  
-   git clone https://github.com/Methusaleh/Web_App_Calkins/
+Then, open your web browser and go to http://localhost:8080.
 
-2. Navigate to the project directory  
-   cd your-project-name
+## Database Setup
+You do not need to create tables manually. The application automatically checks the database when it starts. If the tables are missing, it will run the necessary SQL code to create them for you.
 
-3. Install NPM packages  
-   npm install
-
-   *(or yarn install)*
-
-### **Running the App**
-
-How to run the development server.
-
-\# Example:  
-npm run dev
-
-*(or npm start)*
-
-Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) (or your app's port) to view it in your browser.
-
-## **Contributing**
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-
-1. Fork the Project  
-   Click the 'Fork' button in the top right corner of this page.  
-2. **Create your Feature Branch**  
-   git checkout \-b feature/AmazingFeature
-
-3. Commit your Changes  
-   Make your changes and commit them with a descriptive message.  
-   git commit \-m 'Add some AmazingFeature'
-
-4. **Push to the Branch**  
-   git push origin feature/AmazingFeature
-
-5. Open a Pull Request  
-   Go to your fork on GitHub and click the 'New Pull Request' button.
-
-## **License**
-
-This project is licensed under the MIT License \- see the LICENSE.md file (if you have one) for details.
-
-**How to Use This README:**
-
-* Replace "Project Title" with your project's name.  
-* Fill in the description.  
-* Update the "Features" and "Technologies Used" lists.  
-* Customize the "Getting Started" instructions to match your project's specific setup commands.
+## Credits
+Business Professionals of America (BPA) - Web Application Team (V04)
+* School: Francis Tuttle Institute of Technology
+* Chapter: Reno Chapter
+* Year: 2026
