@@ -105,34 +105,40 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <script>
-        // --- 3. ADD Toast Helper Function ---
+        // creates a temporary toast notification on the screen
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
             toast.textContent = message;
             container.appendChild(toast);
+            
+            // triggers the slide in animation
             requestAnimationFrame(() => toast.classList.add('show'));
+            
+            // removes the toast after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
+        // allows a user to report another user for bad behavior
         async function reportUser(reportedUserId) {
-            // 1. Get the reason
+            // asks the user to type a reason for the report
             const reason = prompt("Please describe the issue with this user:");
             
-            if (!reason) return; // User cancelled
+            // if the user clicks cancel do nothing
+            if (!reason) return; 
 
-            // 2. Submit to API
             try {
+                // sends the report details to the api
                 const response = await axios.post('/api/reports', {
                     reportedUserId: reportedUserId,
                     reason: reason
                 });
                 
-                // Use showToast instead of alert for better UX
+                // shows a success message if it worked
                 showToast(response.data.message, "success");
             } catch (error) {
                 console.error(error);

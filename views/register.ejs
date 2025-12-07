@@ -5,6 +5,10 @@
     <link rel="stylesheet" href="/styles/main.css">
 </head>
 <body>
+    <div id="toast-container"></div>
+
+    <%- include('partials/navbar') %>
+
     <main>
         <h1>Create Your SkillSwap Account</h1>
         <p>All fields marked with an asterisk (*) are required.</p>
@@ -51,17 +55,39 @@
         
         <p id="messageArea" style="margin-top: 15px;"></p>
     </main>
+
     <%- include('partials/footer') %>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <script>
+        // helper function to show toast notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            // triggers the slide in animation
+            requestAnimationFrame(() => toast.classList.add('show'));
+            
+            // removes the toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // listens for the form submit event
         document.getElementById('registerForm').addEventListener('submit', handleRegisterSubmit);
 
-        // --- Client-Side JavaScript Function ---
+        // handles the registration logic
         async function handleRegisterSubmit(event) {
+            // prevents the default form submission to stop page reload
             event.preventDefault(); 
 
+            // get values from the form inputs
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPassword').value;
             const passwordConfirm = document.getElementById('passwordConfirm').value;
@@ -69,50 +95,47 @@
             const dateOfBirth = document.getElementById('regDateOfBirth').value;
             const gradeLevel = document.getElementById('regGradeLevel').value;
             const schoolCollege = document.getElementById('regSchoolCollege').value;
-            const messageArea = document.getElementById('messageArea');
             const avatarStyle = document.getElementById('regAvatarStyle').value;
+            const messageArea = document.getElementById('messageArea');
             messageArea.textContent = ''; 
 
-            // Client-Side Validation: Password Match
+            // client side check to ensure passwords match
             if (password !== passwordConfirm) {
-                messageArea.textContent = 'Error: Passwords do not match.';
-                messageArea.style.color = 'red';
+                showToast('Error: Passwords do not match.', 'error');
                 return;
             }
 
             try {
-                // Axios POST request to the Express API
+                // sends the registration data to the backend api
                 const response = await axios.post('/api/register', {
                     email: email,
                     password: password,
                     userName: userName,
                     dateOfBirth: dateOfBirth,
-                    gradeLevel: gradeLevel, // Will be null if empty string submitted (due to Express logic)
-                    schoolCollege: schoolCollege, // Will be null if empty string submitted
-                    avatarStyle: avatarStyle // Avatar style selection
+                    gradeLevel: gradeLevel, 
+                    schoolCollege: schoolCollege,
+                    avatarStyle: avatarStyle
                 });
 
-                // Handle Success (Status 201 Created)
+                // if registration is successful redirect to the login page
                 if (response.status === 201) {
-                    messageArea.textContent = 'Registration successful! Redirecting to login...';
-                    messageArea.style.color = 'green';
+                    showToast('Registration successful! Redirecting to login...', 'success');
                     
-                    // Redirect to the dashboard/login view after success
-                    window.location.href = '/'; 
+                    // wait a moment for the toast to show before redirecting
+                    setTimeout(() => {
+                        window.location.href = '/'; 
+                    }, 1500);
                 }
 
             } catch (error) {
-                // Handle Errors (e.g., 409 Conflict - Email already exists, 400 Bad Request)
-                
+                // handle errors like duplicate email
                 let errorMessage = 'An unexpected server error occurred.';
                 
                 if (error.response) {
-                    // Use the specific message sent from your Express backend
                     errorMessage = error.response.data.message || errorMessage;
                 }
                 
-                messageArea.textContent = errorMessage;
-                messageArea.style.color = 'red';
+                showToast(errorMessage, 'error');
                 console.error('Registration Failed:', errorMessage);
             }
         }

@@ -10,7 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-// --- Configuration ---
+// setup for the express app and database connection
 const app = express();
 const port = process.env.PORT || 8080;
 const { Pool } = pg;
@@ -22,10 +22,11 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
 
+// configure the view engine to use ejs templates
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// --- Middleware ---
+// configure session middleware to store logins in the database
 app.use(session({
     store: new PgSession({
         pool: pool,
@@ -40,13 +41,14 @@ app.use(session({
     }
 }));
 
+// setup standard middleware for parsing data and logging
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(morgan('combined'));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Security Middleware Functions ---
+// middleware to check if a user is logged in
 function isAuthenticated(req, res, next) {
     if (req.session.user) {
         req.user = req.session.user; 
@@ -60,6 +62,7 @@ function isAuthenticated(req, res, next) {
     }
 }
 
+// middleware to check if a user is an administrator
 function isAdmin(req, res, next) {
     if (req.session.user && req.session.user.isAdmin) {
         req.user = req.session.user;
@@ -73,7 +76,7 @@ function isAdmin(req, res, next) {
     }
 }
 
-// --- Database Initialization ---
+// function to create database tables if they do not exist
 async function createTables() {
     const tableCreationQueries = `
         CREATE TABLE IF NOT EXISTS Users (
@@ -176,10 +179,7 @@ async function createTables() {
 }
 
 
-// =================================================================
-// 1. PUBLIC ROUTES & AUTHENTICATION
-// =================================================================
-
+// loads the home page, showing the dashboard or login screen depending on user status
 app.get('/', async (req, res) => {
     let dbStatus = 'Failed', dbVersion = 'Error';
     const tablesReady = await createTables();
@@ -192,7 +192,7 @@ app.get('/', async (req, res) => {
             dbVersion = result.rows[0].version;
             dbStatus = 'Success';
 
-            // Fetch Top 3 Teachers
+            // fetches the top 3 rated teachers for the dashboard display
             const topTeachersRes = await pool.query(
                 `SELECT u.user_id, u.user_name, u.avatar_style, COUNT(r.rating_id) as like_count
                  FROM Users u
@@ -208,11 +208,13 @@ app.get('/', async (req, res) => {
     res.render('index', { dbStatus, dbVersion, user, topTeachers });
 });
 
+// loads the registration page if the user is not logged in
 app.get('/register', async (req, res) => {
     if (req.session.user) return res.redirect('/');
     res.render('register', { pageTitle: 'Register', user: null });
 });
 
+// handles user registration by saving new account details to the database
 app.post('/api/register', async (req, res) => {
     const { email, password, userName, dateOfBirth, gradeLevel, schoolCollege, avatarStyle } = req.body;
     if (!email || !password || !userName || !dateOfBirth) return res.status(400).json({ message: 'Missing fields.' });
@@ -231,6 +233,7 @@ app.post('/api/register', async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Server error.', error: error.message }); }
 });
 
+// handles user login by verifying password and creating a session
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required.' });
@@ -256,6 +259,7 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Login error.', error: error.message }); }
 });
 
+// logs the user out by destroying the current session
 app.post('/api/logout', (req, res) => {
     if (req.session) req.session.destroy(err => {
         if (err) return res.status(500).json({ message: 'Logout failed.' });
@@ -265,10 +269,7 @@ app.post('/api/logout', (req, res) => {
 });
 
 
-// =================================================================
-// 2. USER PROFILE & SKILLS
-// =================================================================
-
+// renders the profile editing page and loads the master list of skills
 app.get('/profile/edit', isAuthenticated, async (req, res) => {
     try {
         const skillsResult = await pool.query('SELECT skill_id, skill_name FROM Skills ORDER BY skill_name ASC');
@@ -276,6 +277,7 @@ app.get('/profile/edit', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).send('Error loading profile.'); }
 });
 
+// renders the public view of a user profile with skills and ratings
 app.get('/profile/view/:id', isAuthenticated, async (req, res) => {
     const targetId = req.params.id;
     try {
@@ -302,6 +304,7 @@ app.get('/profile/view/:id', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).send('Error loading profile.'); }
 });
 
+// updates the basic profile info like name and grade level
 app.put('/api/user/profile/:id', isAuthenticated, async (req, res) => {
     if (req.user.id !== parseInt(req.params.id)) return res.status(403).json({ message: 'Access denied.' });
     const { userName, gradeLevel, avatarStyle } = req.body;
@@ -318,6 +321,7 @@ app.put('/api/user/profile/:id', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Update failed.' }); }
 });
 
+// fetches the current list of skills a user offers and seeks
 app.get('/api/user/skills/:id', isAuthenticated, async (req, res) => {
     try {
         const offered = await pool.query('SELECT skill_id, is_virtual_only, is_inperson_only FROM User_Skills_Offered WHERE user_id = $1', [req.params.id]);
@@ -326,6 +330,7 @@ app.get('/api/user/skills/:id', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Error fetching skills.' }); }
 });
 
+// updates the skills a user offers by clearing the old list and inserting new ones
 app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
     const { userId, skills } = req.body; 
     const client = await pool.connect();
@@ -347,6 +352,7 @@ app.post('/api/user/skills/offer', isAuthenticated, async (req, res) => {
     } finally { client.release(); }
 });
 
+// updates the skills a user wants to learn by clearing old ones and inserting new ones
 app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
     const { userId, skills } = req.body; 
     const client = await pool.connect();
@@ -368,6 +374,7 @@ app.post('/api/user/skills/seek', isAuthenticated, async (req, res) => {
     } finally { client.release(); }
 });
 
+// allows a user to suggest a new skill to be added to the master list
 app.post('/api/skills/suggest', isAuthenticated, async (req, res) => {
     const { skillName, userId } = req.body; 
     try {
@@ -384,6 +391,7 @@ app.post('/api/skills/suggest', isAuthenticated, async (req, res) => {
 // 3. SESSIONS & MESSAGES
 // =================================================================
 
+// loads the session request form
 app.get('/session/request', isAuthenticated, async (req, res) => {
     try {
         const skillsResult = await pool.query('SELECT skill_id, skill_name FROM Skills ORDER BY skill_name ASC');
@@ -391,10 +399,12 @@ app.get('/session/request', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).send('Error loading form.'); }
 });
 
+// renders the main dashboard for managing sessions
 app.get('/my_sessions', isAuthenticated, (req, res) => {
     res.render('my_sessions', { pageTitle: 'My Sessions', user: req.user });
 });
 
+// renders the rating form for a completed session
 app.get('/session/rate/:id', isAuthenticated, async (req, res) => {
     try {
         const res1 = await pool.query('SELECT s.*, u.user_name as provider_name FROM Sessions s JOIN Users u ON s.provider_id = u.user_id WHERE s.session_id = $1', [req.params.id]);
@@ -405,6 +415,7 @@ app.get('/session/rate/:id', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send('Error'); }
 });
 
+// finds users who teach a specific skill to populate the dropdown
 app.get('/api/skills/:id/providers', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query(
@@ -415,6 +426,7 @@ app.get('/api/skills/:id/providers', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Error fetching providers.' }); }
 });
 
+// creates a new session request
 app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
     const { requesterId, providerId, skillTaughtId, sessionDateTime, locationType, meetingUrl } = req.body;
     if (!requesterId || !providerId || !sessionDateTime) return res.status(400).json({ message: 'Missing fields.' });
@@ -430,6 +442,7 @@ app.post('/api/sessions/request', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Request failed.' }); }
 });
 
+// fetches the full history of sessions for a user
 app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query(
@@ -447,6 +460,7 @@ app.get('/api/sessions/user/:id', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Error fetching history.' }); }
 });
 
+// allows a provider to confirm a session request
 app.post('/api/sessions/confirm', isAuthenticated, async (req, res) => {
     const { sessionId, meetingUrl } = req.body;
     try {
@@ -459,6 +473,7 @@ app.post('/api/sessions/confirm', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Error confirming.' }); }
 });
 
+// allows a user to deny or cancel a session
 app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
     const { sessionId, reason } = req.body;
     try {
@@ -471,6 +486,7 @@ app.post('/api/sessions/deny', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Error denying.' }); }
 });
 
+// marks a confirmed session as complete
 app.post('/api/sessions/complete', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query("UPDATE Sessions SET status = 'Completed' WHERE session_id = $1 AND status = 'Confirmed' RETURNING session_id", [req.body.sessionId]);
@@ -479,6 +495,7 @@ app.post('/api/sessions/complete', isAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Server error.' }); }
 });
 
+// submits a rating for a completed session
 app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
     const { sessionId, raterId, rateeId, likeStatus, feedbackText } = req.body;
     if (parseInt(raterId) === parseInt(rateeId)) return res.status(400).json({ message: 'Self-rating not allowed.' });
@@ -494,9 +511,10 @@ app.post('/api/sessions/rate', isAuthenticated, async (req, res) => {
     }
 });
 
-// Messages
+// renders the inbox view
 app.get('/messages', isAuthenticated, (req, res) => res.render('inbox', { pageTitle: 'My Inbox', user: req.user }));
 
+// renders the chat view with a specific user
 app.get('/messages/:id', isAuthenticated, async (req, res) => {
     try {
         const u = await pool.query('SELECT user_name FROM Users WHERE user_id = $1', [req.params.id]);
@@ -505,6 +523,7 @@ app.get('/messages/:id', isAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).send('Error'); }
 });
 
+// fetches the list of recent conversations
 app.get('/api/messages/inbox', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query(
@@ -520,6 +539,7 @@ app.get('/api/messages/inbox', isAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// fetches the message history between two users
 app.get('/api/messages/thread/:otherUserId', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query(
@@ -533,6 +553,7 @@ app.get('/api/messages/thread/:otherUserId', isAuthenticated, async (req, res) =
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// sends a new message to another user
 app.post('/api/messages/send', isAuthenticated, async (req, res) => {
     try {
         await pool.query('INSERT INTO Messages (sender_id, receiver_id, message_text) VALUES ($1, $2, $3)', [req.user.id, req.body.receiverId, req.body.messageText]);
@@ -545,10 +566,12 @@ app.post('/api/messages/send', isAuthenticated, async (req, res) => {
 // 4. ADMIN PANEL (Protected)
 // =================================================================
 
+// renders the main admin dashboard
 app.get('/admin', isAdmin, (req, res) => {
     res.render('admin_dashboard', { pageTitle: 'Admin Panel', user: req.user });
 });
 
+// fetches a list of all users for the admin panel
 app.get('/api/admin/users', isAdmin, async (req, res) => {
     try {
         const result = await pool.query('SELECT user_id, email, user_name, grade_level, is_admin FROM Users ORDER BY user_id ASC');
@@ -556,6 +579,7 @@ app.get('/api/admin/users', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// allows an admin to promote or demote a user
 app.post('/api/admin/users/:id/toggle_role', isAdmin, async (req, res) => {
     const targetId = parseInt(req.params.id);
     if (targetId === 1) return res.status(403).json({ message: 'Cannot change Root Admin.' });
@@ -570,6 +594,7 @@ app.post('/api/admin/users/:id/toggle_role', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// allows an admin to delete a user account
 app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
     const targetId = parseInt(req.params.id);
     if (targetId === 1) return res.status(403).json({ message: 'Cannot delete Root Admin.' });
@@ -582,6 +607,7 @@ app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// fetches all security reports for review
 app.get('/api/admin/reports', isAdmin, async (req, res) => {
     try {
         const result = await pool.query(
@@ -592,6 +618,7 @@ app.get('/api/admin/reports', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// updates the status of a security report
 app.post('/api/admin/report/:id/status', isAdmin, async (req, res) => {
     try {
         await pool.query('UPDATE Reports SET report_status = $1 WHERE report_id = $2', [req.body.newStatus, req.params.id]);
@@ -600,6 +627,7 @@ app.post('/api/admin/report/:id/status', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// allows a user to submit a security report against another user
 app.post('/api/reports', isAuthenticated, async (req, res) => {
     try {
         await pool.query('INSERT INTO Reports (reporter_id, reported_user_id, report_reason, report_status) VALUES ($1, $2, $3, \'New\')', [req.user.id, req.body.reportedUserId, req.body.reason]);
@@ -607,6 +635,7 @@ app.post('/api/reports', isAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// fetches pending skill suggestions for admin review
 app.get('/api/admin/suggestions', isAdmin, async (req, res) => {
     try {
         const res1 = await pool.query("SELECT s.*, u.user_name AS suggesting_user FROM Skill_Suggestions s LEFT JOIN Users u ON s.suggesting_user_id = u.user_id WHERE s.status = 'Pending'");
@@ -614,6 +643,7 @@ app.get('/api/admin/suggestions', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// approves or rejects a suggested skill
 app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
     const { suggestionId, action } = req.body;
     const client = await pool.connect();
@@ -632,6 +662,7 @@ app.post('/api/admin/suggestions/action', isAdmin, async (req, res) => {
     } catch (e) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Error.' }); } finally { client.release(); }
 });
 
+// allows an admin to manually add a new skill
 app.post('/api/skills', isAdmin, async (req, res) => {
     try {
         const result = await pool.query('INSERT INTO Skills (skill_name) VALUES ($1) RETURNING skill_id', [req.body.skillName]);
@@ -640,6 +671,7 @@ app.post('/api/skills', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// allows an admin to rename an existing skill
 app.put('/api/skills/:id', isAdmin, async (req, res) => {
     try {
         await pool.query('UPDATE Skills SET skill_name = $1 WHERE skill_id = $2', [req.body.skillName, req.params.id]);
@@ -648,6 +680,7 @@ app.put('/api/skills/:id', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// allows an admin to delete a skill
 app.delete('/api/skills/:id', isAdmin, async (req, res) => {
     try {
         await pool.query('DELETE FROM Skills WHERE skill_id = $1', [req.params.id]);
@@ -656,7 +689,7 @@ app.delete('/api/skills/:id', isAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
-// --- Search ---
+// searches for users or skills matching a query
 app.get('/api/search', isAuthenticated, async (req, res) => {
     const q = req.query.q;
     if (!q || q.length < 2) return res.json({ results: [] });
@@ -671,4 +704,5 @@ app.get('/api/search', isAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+// starts the server on the specified port
 app.listen(port, '0.0.0.0', () => console.log(`Server is running on port ${port}`));

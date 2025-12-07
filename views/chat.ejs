@@ -4,20 +4,21 @@
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css">
     <style>
-        /* --- Chat Specific Styles --- */
+        /* styles for the chat interface */
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: 70vh; /* Takes up 70% of the screen height */
+            height: 70vh; /* takes up 70% of screen height */
             border: 1px solid #ccc;
             border-radius: 8px;
             background: #fff;
             overflow: hidden;
         }
 
+        /* area where messages scroll */
         .chat-window {
             flex: 1;
-            overflow-y: auto; /* Scrollable history */
+            overflow-y: auto; /* allows scrolling */
             padding: 20px;
             background-color: #f9f9f9;
             display: flex;
@@ -35,18 +36,18 @@
             word-wrap: break-word;
         }
 
-        /* My Messages (Right side, Green) */
+        /* styles for messages sent by the current user */
         .msg-sent {
             align-self: flex-end;
-            background-color: #dcfce7; /* Light Green */
+            background-color: #dcfce7; /* light green */
             color: #14532d;
             border-bottom-right-radius: 2px;
         }
 
-        /* Their Messages (Left side, Gray) */
+        /* styles for messages received from the other user */
         .msg-received {
             align-self: flex-start;
-            background-color: #e5e7eb; /* Light Gray */
+            background-color: #e5e7eb; /* light gray */
             color: #1f2937;
             border-bottom-left-radius: 2px;
         }
@@ -59,6 +60,7 @@
             text-align: right;
         }
 
+        /* input area at the bottom */
         .chat-input-area {
             padding: 15px;
             background: #fff;
@@ -72,7 +74,7 @@
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            margin-bottom: 0; /* Override global style */
+            margin-bottom: 0;
         }
     </style>
 </head>
@@ -119,49 +121,47 @@
         const myUserId = '<%= user.id %>';
         let isFirstLoad = true;
 
-        // --- Toast Helper (Reuse logic or move to main.js if you separate files) ---
+        // helper function to show toast notifications
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
             toast.textContent = message;
             container.appendChild(toast);
+            
+            // trigger animation
             requestAnimationFrame(() => toast.classList.add('show'));
+            
+            // remove after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // --- 1. Fetch & Render Messages ---
+        // fetches conversation history from the backend
         async function fetchMessages() {
             try {
                 const response = await axios.get(`/api/messages/thread/${otherUserId}`);
                 const messages = response.data.messages;
                 const chatWindow = document.getElementById('chatWindow');
 
-                // If empty state
+                // display message if chat is empty
                 if (messages.length === 0) {
                     chatWindow.innerHTML = '<p style="text-align:center; color:#ccc; margin-top:20px;">No messages yet. Say hello!</p>';
                     return;
                 }
 
-                // Render Messages
-                // Note: In a real app, you'd only append new messages to save performance.
-                // For simplicity here, we re-render the list to ensure sync.
+                // renders each message bubble
                 chatWindow.innerHTML = messages.map(msg => {
-                    // Determine who sent it
+                    // determine if the message was sent or received
                     const isMe = (String(msg.sender_id) === String(myUserId));
                     const type = isMe ? 'msg-sent' : 'msg-received';
                     const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     
-                    // Generate Avatar Seed based on who sent it
-                    // Note: We need the sender's NAME for the seed. 
-                    // Your API currently sends 'sender_name' in the JSON! Perfect!
+                    // generate avatar image based on user style
                     const style = msg.sender_avatar_style || 'bottts';
                     const avatarUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${msg.sender_name}`;
-
-                    // Layout: Avatar on left for received, right for sent
                     const avatarImg = `<img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; margin: 0 10px; align-self: flex-end;">`;
 
                     return `
@@ -176,7 +176,7 @@
                     `;
                 }).join('');
 
-                // Scroll to bottom on first load so we see newest messages
+                // auto-scroll to the bottom only on the first load
                 if (isFirstLoad) {
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                     isFirstLoad = false;
@@ -187,7 +187,7 @@
             }
         }
 
-        // --- 2. Send Message ---
+        // handles sending a new message
         document.getElementById('chatForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const input = document.getElementById('messageText');
@@ -196,15 +196,16 @@
             if (!text.trim()) return;
 
             try {
+                // posts the message to the api
                 await axios.post('/api/messages/send', {
                     receiverId: otherUserId,
                     messageText: text
                 });
                 
-                input.value = ''; // Clear input
-                fetchMessages();  // Refresh immediately
+                input.value = ''; // clear input field
+                fetchMessages();  // refresh chat immediately
                 
-                // Force scroll to bottom after sending
+                // force scroll to bottom
                 const chatWindow = document.getElementById('chatWindow');
                 setTimeout(() => chatWindow.scrollTop = chatWindow.scrollHeight, 100);
 
@@ -213,10 +214,10 @@
             }
         });
 
-        // --- 3. Initial Load & Polling ---
+        // load messages immediately
         fetchMessages();
         
-        // Poll for new messages every 3 seconds
+        // polls for new messages every 3 seconds
         setInterval(fetchMessages, 3000);
 
     </script>
