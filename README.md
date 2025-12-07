@@ -56,3 +56,9 @@ Business Professionals of America (BPA) - Web Application Team (V04)
 * School: Francis Tuttle Institute of Technology
 * Chapter: Reno Chapter
 * Year: 2026
+
+## System Architecture
+![System Architecture Diagram](./docs/SAD.png)
+
+## Database Schema
+![Database ERD](./docs/ERD.png)
