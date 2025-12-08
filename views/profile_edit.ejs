@@ -49,7 +49,7 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="text-align: left;">Offer?</th>
+                            <th style="text-align: center; width: 80px;">Offer?</th>
                             <th style="text-align: left;">Skill Name</th>
                             <th style="text-align: center;">I can teach<br>Virtual</th>
                             <th style="text-align: center;">I can teach<br>In-Person</th>
@@ -57,7 +57,7 @@
                     </thead>
                     <tbody>
                         <% masterSkills.forEach(skill => { %>
-                            <tr style="border-bottom: 1px solid #eee;">
+                            <tr style="border-bottom: 1px solid #eee; vertical-align: middle;">
                                 <td>
                                     <input type="checkbox" 
                                         class="skill-toggle" 
@@ -66,7 +66,7 @@
                                 </td>
                                 
                                 <td>
-                                    <label for="skill_<%= skill.skill_id %>"><%= skill.skill_name %></label>
+                                    <label for="skill_<%= skill.skill_id %>"style="cursor: pointer; display: block; width: 100%;"><%= skill.skill_name %></label>
                                 </td>
 
                                 <td style="text-align: center;">
@@ -102,7 +102,7 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="text-align: left;">Seek?</th>
+                            <th style="text-align: center; width: 80px;">Seek?</th>
                             <th style="text-align: left;">Skill Name</th>
                             <th style="text-align: center;">Prefer<br>Virtual</th>
                             <th style="text-align: center;">Prefer<br>In-Person</th>
@@ -110,7 +110,7 @@
                     </thead>
                     <tbody>
                         <% masterSkills.forEach(skill => { %>
-                            <tr style="border-bottom: 1px solid #eee;">
+                            <tr style="border-bottom: 1px solid #eee; vertical-align: middle;">
                                 <td>
                                     <input type="checkbox" 
                                         class="seek-toggle" 
@@ -119,7 +119,7 @@
                                 </td>
                                 
                                 <td>
-                                    <label for="seek_skill_<%= skill.skill_id %>"><%= skill.skill_name %></label>
+                                    <label for="seek_skill_<%= skill.skill_id %>"style="cursor: pointer; display: block; width: 100%;"><%= skill.skill_name %></label>
                                 </td>
 
                                 <td style="text-align: center;">
