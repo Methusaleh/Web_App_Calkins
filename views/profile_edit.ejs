@@ -3,6 +3,12 @@
 <head>
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css">
+    <style>
+        /* ADDED: Hover effect to help users track rows */
+        tr:hover {
+            background-color: #f3f4f6; /* Light gray highlight on hover */
+        }
+    </style>
 </head>
 <body>
     <div id="toast-container"></div>
@@ -57,7 +63,7 @@
                     </thead>
                     <tbody>
                         <% masterSkills.forEach(skill => { %>
-                            <tr style="border-bottom: 1px solid #eee;">
+                            <tr style="border-bottom: 1px solid #b0b0b0; vertical-align: middle;">
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
                                         class="skill-toggle" 
@@ -107,7 +113,7 @@
                     </thead>
                     <tbody>
                         <% masterSkills.forEach(skill => { %>
-                            <tr style="border-bottom: 1px solid #eee;">
+                            <tr style="border-bottom: 1px solid #b0b0b0; vertical-align: middle;">
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
                                         class="seek-toggle" 
@@ -121,10 +127,16 @@
                                 </td>
 
                                 <td style="text-align: center; vertical-align: middle;">
-                                    <input type="checkbox" class="seek-virtual" data-id="<%= skill.skill_id %>" style="margin: 0; vertical-align: middle;">
+                                    <input type="checkbox" 
+                                        class="seek-virtual" 
+                                        data-id="<%= skill.skill_id %>"
+                                        style="margin: 0; vertical-align: middle;">
                                 </td>
                                 <td style="text-align: center; vertical-align: middle;">
-                                    <input type="checkbox" class="seek-inperson" data-id="<%= skill.skill_id %>" style="margin: 0; vertical-align: middle;">
+                                    <input type="checkbox" 
+                                        class="seek-inperson" 
+                                        data-id="<%= skill.skill_id %>"
+                                        style="margin: 0; vertical-align: middle;">
                                 </td>
                             </tr>
                         <% }) %>
@@ -148,8 +160,9 @@
     
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // passes the user's id for api submissions
-        const userId = '<%= user.id %>'; 
+        // --- Client-Side JavaScript Logic ---
+        
+        const userId = '<%= user.id %>'; // pass the user's id for api submissions
 
         // helper function to show toast notifications
         function showToast(message, type = 'info') {
