@@ -49,35 +49,32 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="text-align: center; width: 80px;">Offer?</th>
-                            <th style="text-align: left;">Skill Name</th>
-                            <th style="text-align: center;">I can teach<br>Virtual</th>
-                            <th style="text-align: center;">I can teach<br>In-Person</th>
+                            <th style="text-align: center; width: 80px; vertical-align: middle;">Offer?</th>
+                            <th style="text-align: left; vertical-align: middle;">Skill Name</th>
+                            <th style="text-align: center; vertical-align: middle;">I can teach<br>Virtual</th>
+                            <th style="text-align: center; vertical-align: middle;">I can teach<br>In-Person</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% masterSkills.forEach(skill => { %>
-                            <tr style="border-bottom: 1px solid #eee; vertical-align: middle;">
-                                <td>
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
                                         class="skill-toggle" 
                                         data-id="<%= skill.skill_id %>"
-                                        id="skill_<%= skill.skill_id %>">
+                                        id="skill_<%= skill.skill_id %>"
+                                        style="margin: 0; vertical-align: middle;">
                                 </td>
                                 
-                                <td>
-                                    <label for="skill_<%= skill.skill_id %>"style="cursor: pointer; display: block; width: 100%;"><%= skill.skill_name %></label>
+                                <td style="vertical-align: middle;">
+                                    <label for="skill_<%= skill.skill_id %>" style="cursor: pointer; display: block; width: 100%; margin: 0; line-height: 1.2;"><%= skill.skill_name %></label>
                                 </td>
 
-                                <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="loc-virtual" 
-                                        data-id="<%= skill.skill_id %>">
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <input type="checkbox" class="loc-virtual" data-id="<%= skill.skill_id %>" style="margin: 0; vertical-align: middle;">
                                 </td>
-                                <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="loc-inperson" 
-                                        data-id="<%= skill.skill_id %>">
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <input type="checkbox" class="loc-inperson" data-id="<%= skill.skill_id %>" style="margin: 0; vertical-align: middle;">
                                 </td>
                             </tr>
                         <% }) %>
@@ -102,35 +99,32 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="text-align: center; width: 80px;">Seek?</th>
-                            <th style="text-align: left;">Skill Name</th>
-                            <th style="text-align: center;">Prefer<br>Virtual</th>
-                            <th style="text-align: center;">Prefer<br>In-Person</th>
+                            <th style="text-align: center; width: 80px; vertical-align: middle;">Seek?</th>
+                            <th style="text-align: left; vertical-align: middle;">Skill Name</th>
+                            <th style="text-align: center; vertical-align: middle;">Prefer<br>Virtual</th>
+                            <th style="text-align: center; vertical-align: middle;">Prefer<br>In-Person</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% masterSkills.forEach(skill => { %>
-                            <tr style="border-bottom: 1px solid #eee; vertical-align: middle;">
-                                <td>
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
                                         class="seek-toggle" 
                                         data-id="<%= skill.skill_id %>"
-                                        id="seek_skill_<%= skill.skill_id %>">
+                                        id="seek_skill_<%= skill.skill_id %>"
+                                        style="margin: 0; vertical-align: middle;">
                                 </td>
                                 
-                                <td>
-                                    <label for="seek_skill_<%= skill.skill_id %>"style="cursor: pointer; display: block; width: 100%;"><%= skill.skill_name %></label>
+                                <td style="vertical-align: middle;">
+                                    <label for="seek_skill_<%= skill.skill_id %>" style="cursor: pointer; display: block; width: 100%; margin: 0; line-height: 1.2;"><%= skill.skill_name %></label>
                                 </td>
 
-                                <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="seek-virtual" 
-                                        data-id="<%= skill.skill_id %>">
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <input type="checkbox" class="seek-virtual" data-id="<%= skill.skill_id %>" style="margin: 0; vertical-align: middle;">
                                 </td>
-                                <td style="text-align: center;">
-                                    <input type="checkbox" 
-                                        class="seek-inperson" 
-                                        data-id="<%= skill.skill_id %>">
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <input type="checkbox" class="seek-inperson" data-id="<%= skill.skill_id %>" style="margin: 0; vertical-align: middle;">
                                 </td>
                             </tr>
                         <% }) %>
@@ -150,12 +144,12 @@
         </form>
         
     </main>
-
+    <%- include('partials/footer') %>
+    
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // --- Client-Side JavaScript Logic ---
-        
-        const userId = '<%= user.id %>'; // pass the user's id for api submissions
+        // passes the user's id for api submissions
+        const userId = '<%= user.id %>'; 
 
         // helper function to show toast notifications
         function showToast(message, type = 'info') {
@@ -346,7 +340,7 @@
             } catch (error) {
                 console.error('Failed to load existing skills:', error);
             }
-        });
+        }); 
     </script>
 </body>
 </html>
