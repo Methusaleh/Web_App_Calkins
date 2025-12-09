@@ -6,6 +6,18 @@ node_modules
 .gitignore 
 .env
 .DS_Store
+.vscode
+.idea
 
 # Ignore logs
 npm-debug.log
+error.log
+
+# Ignore documentation and diagrams (Save space in production)
+docs/
+README.md
+*.md
+
+# Ignore utility scripts (Don't need these in the live container)
+hash_admin.js
+seed.js
