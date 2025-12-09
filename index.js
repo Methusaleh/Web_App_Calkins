@@ -635,6 +635,22 @@ app.post('/api/reports', isAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).json({ message: 'Error.' }); }
 });
 
+//  fetches the system audit trail
+app.get('/api/admin/logs', isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT l.action_type, l.target_table, l.timestamp, u.user_name 
+             FROM Admin_Logs l
+             JOIN Users u ON l.admin_id = u.user_id
+             ORDER BY l.timestamp DESC LIMIT 50`
+        );
+        res.status(200).json({ logs: result.rows });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Error fetching logs.' });
+    }
+});
+
 // fetches pending skill suggestions for admin review
 app.get('/api/admin/suggestions', isAdmin, async (req, res) => {
     try {
