@@ -179,20 +179,33 @@ async function createTables() {
 }
 
 
-// loads the home page, showing the dashboard or login screen depending on user status
-app.get('/', async (req, res) => {
-    let dbStatus = 'Failed', dbVersion = 'Error';
-    const tablesReady = await createTables();
+// landing page route
+app.get('/', (req, res) => {
+    // if user is logged in send them to dashboard
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+    res.render('landing');
+});
+
+// dashboard route
+app.get('/dashboard', async (req, res) => {
+    let dbStatus = 'Failed';
+    let dbVersion = 'Error';
+    
+    // setup database tables
+    const tablesReady = await createTables(); 
     const user = req.session.user || null; 
     let topTeachers = [];
 
     if (tablesReady) {
         try {
+            // check connection
             const result = await pool.query('SELECT version()');
             dbVersion = result.rows[0].version;
             dbStatus = 'Success';
 
-            // fetches the top 3 rated teachers for the dashboard display
+            // get top rated teachers
             const topTeachersRes = await pool.query(
                 `SELECT u.user_id, u.user_name, u.avatar_style, COUNT(r.rating_id) as like_count
                  FROM Users u
@@ -202,10 +215,18 @@ app.get('/', async (req, res) => {
                  ORDER BY like_count DESC LIMIT 3`
             );
             topTeachers = topTeachersRes.rows;
-        } catch (error) { console.error('DB Error:', error.message); }
+        } catch (error) { 
+            console.error('db error:', error.message); 
+        }
     }
 
+    // render the main app view
     res.render('index', { dbStatus, dbVersion, user, topTeachers });
+});
+
+// login route fix
+app.get('/login', (req, res) => {
+    res.redirect('/dashboard');
 });
 
 // loads the registration page if the user is not logged in
