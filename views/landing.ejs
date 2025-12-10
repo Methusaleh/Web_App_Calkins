@@ -5,29 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to SkillSwap</title>
     <link rel="stylesheet" href="/styles/main.css">
+    
+    <style>
+        /* this forces the landing page to ignore global layout rules */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        /* this makes the main gradient section fill the whole screen width */
+        .landing-hero {
+            width: 100%;
+            max-width: none !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
     
-    <nav style="background: #2563eb; padding: 1rem; color: white; display: flex; justify-content: space-between; align-items: center;">
+    <nav style="background: #2563eb; padding: 1rem 2rem; color: white; display: flex; justify-content: space-between; align-items: center;">
         <div style="font-size: 1.5rem; font-weight: bold; display: flex; align-items: center;">
             SkillSwap
         </div>
         <div>
-            <a href="/login" style="color: white; text-decoration: none; font-weight: bold; padding: 8px 16px; border: 1px solid white; border-radius: 4px;">Log In</a>
+            <a href="/dashboard" style="color: white; text-decoration: none; font-weight: bold; padding: 8px 16px; border: 1px solid white; border-radius: 4px;">Log In</a>
         </div>
     </nav>
 
-    <main style="flex: 1; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); text-align: center; padding: 20px;">
+    <main class="landing-hero">
         <div style="max-width: 800px;">
             <h1 style="font-size: 3.5rem; color: #1e3a8a; margin-bottom: 20px;">Share Skills. Learn Together.</h1>
             <p style="font-size: 1.25rem; color: #4b5563; margin-bottom: 40px; line-height: 1.6;">
-                SkillSwap connects students who want to learn together.
-                Whether it's <strong>Calculus</strong>, <strong>Guitar</strong>, or <strong>Python</strong>, find your perfect peer tutor today.
+                SkillSwap connects students who want to learn together. Whether it's <strong>Calculus</strong>, <strong>Guitar</strong>, or <strong>Python</strong>, find your perfect peer tutor today.
             </p>
             
             <div style="display: flex; gap: 20px; justify-content: center;">
-                <a href="/login" style="background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">Find a Tutor</a>
-                <a href="/login" style="background: white; color: #2563eb; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">Become a Tutor</a>
+                <a href="/dashboard" style="background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">Get Started</a>
             </div>
         </div>
     </main>
