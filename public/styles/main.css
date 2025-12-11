@@ -31,15 +31,21 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--bg-body);
     color: var(--text-main);
-    margin: 0; /* Reset margin for full-width navbar */
-    padding-top: 80px; /* Push content down so Navbar doesn't cover it */
+    
+    /* FIX: Zero margin removes the white border around the page */
+    margin: 0; 
+    padding: 0; 
+    
+    /* FIX: Removed 'padding-top: 80px' so content isn't pushed down */
     line-height: 1.6;
 }
 
 main {
-    max-width: 1000px; /* Constrain content width, not the whole body */
+    max-width: 1000px; /* Constrain content width */
     margin: 0 auto;
     padding: 20px;
+    /* Optional: Add top margin here if content feels too close to navbar on some pages */
+    margin-top: 20px; 
 }
 
 h1, h2, h3 { 
@@ -91,11 +97,11 @@ label {
 }
 
 /* =========================================
-   3. NAVBAR STYLING (NEW)
+   3. NAVBAR STYLING
    ========================================= */
+/* Note: We removed 'position: fixed' so it flows naturally with the page */
 .navbar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
+    width: 100%;
     height: 60px;
     background-color: var(--bg-card);
     border-bottom: 1px solid var(--border-color);
@@ -103,6 +109,7 @@ label {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
+    box-sizing: border-box; /* Ensures padding doesn't widen the bar */
     z-index: 1000;
     box-shadow: var(--shadow-sm);
 }
@@ -152,11 +159,11 @@ label {
 }
 
 /* =========================================
-   4. TOAST NOTIFICATIONS (EXISTING)
+   4. TOAST NOTIFICATIONS
    ========================================= */
 #toast-container {
     position: fixed;
-    top: 80px; /* Adjusted to sit below the new Navbar */
+    top: 80px; 
     right: 20px;
     z-index: 9999;
     display: flex;
@@ -189,9 +196,8 @@ label {
 .toast-info { background-color: var(--primary-color); border-left: 5px solid #1d4ed8; }
 
 /* =========================================
-   5. COMPONENT FIXES (EXISTING)
+   5. COMPONENT FIXES
    ========================================= */
-/* Fix for Rating Radio Buttons */
 .radio-option {
     display: flex;
     align-items: center;
