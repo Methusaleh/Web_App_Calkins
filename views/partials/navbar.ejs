@@ -32,7 +32,6 @@
                     
                     <div style="padding: 12px 15px; border-bottom: 1px solid #eee; background: #f9fafb;">
                         <div style="font-weight: bold; font-size: 0.9rem;"><%= user.name %></div>
-                        <div style="font-size: 0.75rem; color: #666;">User ID: <%= user.id %></div>
                     </div>
 
                     <a href="/profile/view/<%= user.id %>" class="menu-item">
@@ -63,7 +62,6 @@
 </nav>
 
 <style>
-    /* Dropdown Item Styling */
     .menu-item {
         display: block;
         padding: 10px 15px;
@@ -76,12 +74,10 @@
         background: #f3f4f6;
     }
 
-    /* High Contrast Mode Styles */
     body.high-contrast-mode {
         filter: contrast(1.5) saturate(0.8);
         background-color: #fff !important; 
     }
-    /* Inversions for readability in high contrast */
     body.high-contrast-mode nav,
     body.high-contrast-mode .navbar {
         background: #000 !important;
@@ -94,16 +90,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-    // 1. Toggle Dropdown Menu
     function toggleUserMenu() {
         const menu = document.getElementById('userDropdown');
         menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
     }
 
-    // Close menu when clicking outside
     document.addEventListener('click', function(event) {
         const dropdown = document.getElementById('userDropdown');
-        // Check if the click was inside the trigger or the dropdown itself
         const trigger = event.target.closest('[onclick="toggleUserMenu()"]');
         const insideMenu = event.target.closest('#userDropdown');
         
@@ -112,7 +105,6 @@
         }
     });
 
-    // 2. Logout Logic (Preserved from your original code)
     async function handleLogout() {
         if (!confirm("Are you sure you want to log out?")) return;
         try {
@@ -124,21 +116,16 @@
         }
     }
 
-    // 3. Colorblind / High Contrast Logic
     function toggleColorblind() {
         const body = document.body;
         const checkbox = document.getElementById('cbToggle');
-        
-        // Toggle the class on the body
         body.classList.toggle('high-contrast-mode');
         
-        // Save preference to browser memory
         const isEnabled = body.classList.contains('high-contrast-mode');
         checkbox.checked = isEnabled;
         localStorage.setItem('colorblindMode', isEnabled);
     }
 
-    // 4. Load Colorblind Preference on Page Load
     document.addEventListener('DOMContentLoaded', () => {
         const isEnabled = localStorage.getItem('colorblindMode') === 'true';
         if (isEnabled) {
