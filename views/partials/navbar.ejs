@@ -1,6 +1,9 @@
-<nav class="navbar">
+<nav class="navbar" style="position: relative; z-index: 1000;">
     <a href="/" class="nav-brand">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+        </svg>
         SkillSwap
     </a>
 
@@ -14,25 +17,102 @@
                 <a href="/admin" class="nav-link" style="color: #b91c1c;">Admin</a>
             <% } %>
             
-            <div class="nav-user">
-                <span style="font-size: 0.9em; font-weight: bold; margin-right:5px;"><%= user.name %></span>
+            <div style="position: relative; margin-left: 15px;">
                 
-                <a href="/profile/view/<%= user.id %>" title="View Profile">
-                    <img src="https://api.dicebear.com/9.x/<%= user.avatarStyle || 'bottts' %>/svg?seed=<%= user.name %>" class="nav-avatar" alt="Avatar">
-                </a>
-                
-                <button onclick="handleLogout()" style="background:none; border:none; cursor:pointer; font-size:1.2em; padding: 5px;" title="Log Out">🚪</button>
+                <div onclick="toggleUserMenu()" style="cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 6px; transition: background 0.2s;">
+                    <span style="font-size: 0.9em; font-weight: bold; color: var(--text-color, #333);"><%= user.name %></span>
+                    <img src="https://api.dicebear.com/9.x/<%= user.avatarStyle || 'bottts' %>/svg?seed=<%= user.name %>" 
+                         class="nav-avatar" 
+                         alt="Avatar"
+                         style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ccc;">
+                    <span style="font-size: 0.8em; color: #666;">▼</span>
+                </div>
+
+                <div id="userDropdown" style="display: none; position: absolute; right: 0; top: 120%; background: white; color: #333; min-width: 220px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #eee; overflow: hidden;">
+                    
+                    <div style="padding: 12px 15px; border-bottom: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-weight: bold; font-size: 0.9rem;"><%= user.name %></div>
+                        <div style="font-size: 0.75rem; color: #666;">User ID: <%= user.id %></div>
+                    </div>
+
+                    <a href="/profile/view/<%= user.id %>" class="menu-item">
+                        👤 My Profile
+                    </a>
+                    
+                    <div onclick="toggleColorblind()" class="menu-item" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span>👁️ High Contrast</span>
+                        <input type="checkbox" id="cbToggle" style="pointer-events: none;">
+                    </div>
+
+                    <div style="border-top: 1px solid #eee;"></div>
+                    
+                    <a href="#" onclick="handleLogout()" class="menu-item" style="color: #ef4444;">
+                        🚪 Log Out
+                    </a>
+                </div>
+
             </div>
         </div>
+
     <% } else { %>
         <div class="nav-links">
             <a href="/login" class="nav-link">Log In</a>
-            <a href="/register" class="nav-link" style="background-color: var(--primary-color); color: white; padding: 8px 15px; border-radius: 6px;">Sign Up</a>
+            <a href="/register" class="nav-link" style="background-color: var(--primary-color, #2563eb); color: white; padding: 8px 15px; border-radius: 6px;">Sign Up</a>
         </div>
     <% } %>
 </nav>
 
+<style>
+    /* Dropdown Item Styling */
+    .menu-item {
+        display: block;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: #333;
+        font-size: 0.9rem;
+        transition: background 0.1s;
+    }
+    .menu-item:hover {
+        background: #f3f4f6;
+    }
+
+    /* High Contrast Mode Styles */
+    body.high-contrast-mode {
+        filter: contrast(1.5) saturate(0.8);
+        background-color: #fff !important; 
+    }
+    /* Inversions for readability in high contrast */
+    body.high-contrast-mode nav,
+    body.high-contrast-mode .navbar {
+        background: #000 !important;
+        border-bottom: 2px solid yellow;
+    }
+    body.high-contrast-mode a {
+        text-decoration: underline;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
+    // 1. Toggle Dropdown Menu
+    function toggleUserMenu() {
+        const menu = document.getElementById('userDropdown');
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdown');
+        // Check if the click was inside the trigger or the dropdown itself
+        const trigger = event.target.closest('[onclick="toggleUserMenu()"]');
+        const insideMenu = event.target.closest('#userDropdown');
+        
+        if (!trigger && !insideMenu && dropdown) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // 2. Logout Logic (Preserved from your original code)
     async function handleLogout() {
         if (!confirm("Are you sure you want to log out?")) return;
         try {
@@ -43,4 +123,28 @@
             alert('Logout failed.');
         }
     }
+
+    // 3. Colorblind / High Contrast Logic
+    function toggleColorblind() {
+        const body = document.body;
+        const checkbox = document.getElementById('cbToggle');
+        
+        // Toggle the class on the body
+        body.classList.toggle('high-contrast-mode');
+        
+        // Save preference to browser memory
+        const isEnabled = body.classList.contains('high-contrast-mode');
+        checkbox.checked = isEnabled;
+        localStorage.setItem('colorblindMode', isEnabled);
+    }
+
+    // 4. Load Colorblind Preference on Page Load
+    document.addEventListener('DOMContentLoaded', () => {
+        const isEnabled = localStorage.getItem('colorblindMode') === 'true';
+        if (isEnabled) {
+            document.body.classList.add('high-contrast-mode');
+            const cb = document.getElementById('cbToggle');
+            if(cb) cb.checked = true;
+        }
+    });
 </script>

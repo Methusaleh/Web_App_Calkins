@@ -298,6 +298,87 @@ app.get('/profile/edit', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).send('Error loading profile.'); }
 });
 
+// --- PASSWORD RESET SECTION ---
+
+// 1. Show the "Forgot Password" Form
+app.get('/forgot-password', (req, res) => {
+    res.render('forgot_password');
+});
+
+// Handle the Form Submission (Generate Token)
+app.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    
+    // Create a random token
+    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const oneHour = 3600000;
+    const expires = Date.now() + oneHour;
+
+    try {
+        // Save token to DB
+        const result = await pool.query(
+            "UPDATE Users SET reset_token = $1, reset_expires = $2 WHERE email = $3 RETURNING user_name",
+            [token, expires, email]
+        );
+
+        if (result.rows.length > 0) {
+            // SUCCESS: User found.
+            // We pass the 'token' to the view so we can make a clickable button.
+            res.render('forgot_password_sent', { 
+                email: email,
+                token: token,   // <--- Sending the key to the frontend
+                demoMode: true  // <--- Flag to tell the page "Show the button"
+            });
+        } else {
+            // SECURITY: Even if email not found, don't reveal it.
+            // But for demo, we might want to warn them.
+            res.render('forgot_password', { error: "No account found with that email." });
+        }
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("Error.");
+    }
+});
+
+// 3. Show the "New Password" Form (if token is valid)
+app.get('/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    
+    // Check if token exists and hasn't expired
+    const result = await pool.query(
+        "SELECT user_id FROM Users WHERE reset_token = $1 AND reset_expires > $2",
+        [token, Date.now()]
+    );
+
+    if (result.rows.length === 0) {
+        return res.send("This password reset link is invalid or has expired.");
+    }
+
+    res.render('reset_password', { token });
+});
+
+// 4. Update the Password
+app.post('/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+    
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    try {
+        // Update password AND clear the token so it can't be used twice
+        await pool.query(
+            "UPDATE Users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE reset_token = $2",
+            [hashedPassword, token]
+        );
+        
+        res.redirect('/login');
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("Error resetting password.");
+    }
+});
+
 // renders the public view of a user profile with skills and ratings
 app.get('/profile/view/:id', isAuthenticated, async (req, res) => {
     const targetId = req.params.id;
