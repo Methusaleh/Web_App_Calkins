@@ -298,41 +298,42 @@ app.get('/profile/edit', isAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).send('Error loading profile.'); }
 });
 
-// --- PASSWORD RESET SECTION ---
+// --- password reset section ---
 
-// 1. Show the "Forgot Password" Form
+// show the forgot password form
 app.get('/forgot-password', (req, res) => {
     res.render('forgot_password');
 });
 
-// Handle the Form Submission (Generate Token)
+// handle the form submission
 app.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     
-    // Create a random token
+    // create a random token
     const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
     const oneHour = 3600000;
     const expires = Date.now() + oneHour;
 
     try {
-        // Save token to DB
+        // save token to db
         const result = await pool.query(
             "UPDATE Users SET reset_token = $1, reset_expires = $2 WHERE email = $3 RETURNING user_name",
             [token, expires, email]
         );
 
         if (result.rows.length > 0) {
-            // SUCCESS: User found.
-            // We pass the 'token' to the view so we can make a clickable button.
+            // success: render the 'sent' page and pass the token for the demo button
             res.render('forgot_password_sent', { 
                 email: email,
-                token: token,   // <--- Sending the key to the frontend
-                demoMode: true  // <--- Flag to tell the page "Show the button"
+                token: token 
             });
         } else {
-            // SECURITY: Even if email not found, don't reveal it.
-            // But for demo, we might want to warn them.
-            res.render('forgot_password', { error: "No account found with that email." });
+            // security: for this project we will just show the same page to avoid fishing
+            // but in a real app you might warn them
+            res.render('forgot_password_sent', { 
+                email: email,
+                token: null 
+            });
         }
     } catch (e) {
         console.error(e);
@@ -340,11 +341,11 @@ app.post('/forgot-password', async (req, res) => {
     }
 });
 
-// 3. Show the "New Password" Form (if token is valid)
+// show the new password form
 app.get('/reset-password/:token', async (req, res) => {
     const { token } = req.params;
     
-    // Check if token exists and hasn't expired
+    // check if token exists and is valid
     const result = await pool.query(
         "SELECT user_id FROM Users WHERE reset_token = $1 AND reset_expires > $2",
         [token, Date.now()]
@@ -357,16 +358,16 @@ app.get('/reset-password/:token', async (req, res) => {
     res.render('reset_password', { token });
 });
 
-// 4. Update the Password
+// update the password
 app.post('/reset-password/:token', async (req, res) => {
     const { token } = req.params;
     const { newPassword } = req.body;
     
-    // Hash the new password
+    // hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     try {
-        // Update password AND clear the token so it can't be used twice
+        // update password and clear token
         await pool.query(
             "UPDATE Users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE reset_token = $2",
             [hashedPassword, token]
