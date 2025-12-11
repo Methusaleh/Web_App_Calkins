@@ -732,7 +732,7 @@ app.get('/api/search', isAuthenticated, async (req, res) => {
     if (!q || q.length < 2) return res.json({ results: [] });
     try {
         const result = await pool.query(
-            `SELECT u.user_id, u.user_name, u.grade_level as sub_text, 'user' as type FROM Users u WHERE u.user_name ILIKE $1 AND u.is_admin = FALSE
+            `SELECT u.user_id, u.user_name, u.grade_level as sub_text, 'user' as type FROM Users u WHERE u.user_name ILIKE $1
              UNION ALL
              SELECT u.user_id, u.user_name, s.skill_name as sub_text, 'skill_match' as type FROM Users u JOIN User_Skills_Offered uso ON u.user_id = uso.user_id JOIN Skills s ON uso.skill_id = s.skill_id WHERE s.skill_name ILIKE $1 LIMIT 10`,
             [`%${q}%`]
