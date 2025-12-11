@@ -18,7 +18,7 @@
                 <span style="font-size: 0.9em; font-weight: bold; margin-right:5px;"><%= user.name %></span>
                 
                 <a href="/profile/view/<%= user.id %>" title="View Profile">
-                    <img src="https://api.dicebear.com/7.x/<%= user.avatarStyle || 'bottts' %>/svg?seed=<%= user.name %>" class="nav-avatar" alt="Avatar">
+                    <img src="https://api.dicebear.com/9.x/<%= user.avatarStyle || 'bottts' %>/svg?seed=<%= user.name %>" class="nav-avatar" alt="Avatar">
                 </a>
                 
                 <button onclick="handleLogout()" style="background:none; border:none; cursor:pointer; font-size:1.2em; padding: 5px;" title="Log Out">🚪</button>
