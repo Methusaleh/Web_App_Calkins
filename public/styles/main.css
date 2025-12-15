@@ -15,9 +15,9 @@
     --warning-color: #F07B3F;
     
     /* Colorful Neutral Scale */
-    --bg-body: #fff9f0;            /* Warm cream background */
+    --bg-body: #fff5f5;            /* Soft coral/red tint background */
     --bg-card: #ffffff;            /* White Cards */
-    --bg-card-alt: #fffbf5;        /* Light warm alternative */
+    --bg-card-alt: #fffafa;        /* Light coral alternative */
     --text-main: #1f2937;          /* Dark Gray Text */
     --text-muted: #6b7280;         /* Medium Gray Text */
     --border-color: #ffd46033;     /* Soft yellow-tinted borders */
@@ -32,7 +32,7 @@
    ========================================= */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #fff9f0 0%, #fffbf5 100%);
+    background: linear-gradient(135deg, #fff5f5 0%, #fffafa 100%);
     background-attachment: fixed;
     color: var(--text-main);
     margin: 0; 
