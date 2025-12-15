@@ -2,14 +2,14 @@
    1. VARIABLES & THEME CONFIGURATION
    ========================================= */
    :root {
-    /* Primary: Deep Blue (Trust, Professionalism) */
-    --primary-color: #2563eb; 
-    --primary-hover: #1d4ed8;
+    /* Primary: Deep Blue (Trust, Professionalism) -> Switched to Purple (with matching hover) for new color scheme */
+    --primary-color: #450693;
+    --primary-hover: #370576;
     
-    /* Secondary: Teal/Green (Growth, Success) */
-    --secondary-color: #10b981;
+    /* Secondary: Teal/Green (Growth, Success) -> Switched to Electric Violet to compliment the primary color */
+    --secondary-color: #FF3F7F;
     
-    /* Accent: Amber/Orange (Energy, Action) */
+    /* Accent: Amber/Orange (Energy, Action) -> Switched to Wild Strawberry to keep the energy */
     --accent-color: #f59e0b;
     
     /* Neutral Scale */
