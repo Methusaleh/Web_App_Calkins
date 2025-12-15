@@ -13,7 +13,7 @@
     --accent-color: #f59e0b;
     
     /* Neutral Scale */
-    --bg-body: #d8bbee;       /* Light Gray Background -> to lavender */
+    --bg-body: #e5e7eb;       /* Light Gray Background (note: never make anything yellow again) */
     --bg-card: #ffffff;       /* White Cards */
     --text-main: #1f2937;     /* Dark Gray Text */
     --text-muted: #6b7280;    /* Light Gray Text */
