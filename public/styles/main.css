@@ -91,6 +91,18 @@ button:active {
     transform: translateY(0);
 }
 
+/* Blue button variant - for backward compatibility with existing buttons */
+button.button-blue,
+button.btn-primary {
+    background: linear-gradient(135deg, #450693, #370576);
+    box-shadow: 0 2px 8px rgba(69, 6, 147, 0.3);
+}
+
+button.button-blue:hover,
+button.btn-primary:hover {
+    box-shadow: 0 4px 12px rgba(69, 6, 147, 0.4);
+}
+
 /* Secondary button style */
 button.secondary {
     background: linear-gradient(135deg, var(--primary-color), #3d5a7e);
