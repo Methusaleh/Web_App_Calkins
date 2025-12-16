@@ -16,16 +16,41 @@
             background-color: white !important; 
         }
 
-            body.high-contrast-mode nav,
+        /* High contrast override (keeps your existing behavior) */
+        body.high-contrast-mode nav,
         body.high-contrast-mode .navbar {
             background: #000 !important;
             border-bottom: 2px solid yellow;
         }
-        
-        body.high-contrast-mode a {
-            text-decoration: underline;
+
+        /* Navbar: reduced height and persistent 2px yellow bottom border */
+        .navbar {
+            background: #2D4059;
+            padding: 0.5rem 1.5rem; /* smaller vertical padding to shrink navbar */
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #FFD460; /* 2px yellow border */
+            box-sizing: border-box;
         }
-        
+
+        .navbar .brand {
+            font-size: 1.25rem;
+            color: #FFD460;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar .nav-actions a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 14px;
+            border-radius: 4px;
+        }
+
         /* The gradient lives here now (Blue top, stops at footer) */
         .landing-hero {
             width: 100%;
@@ -51,16 +76,40 @@
             z-index: 10;
             margin-top: 0 !important;
         }
+
+        /* CTA styles */
+        .cta-primary {
+            background: #EA5455;
+            color: white;
+            padding: 12px 26px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+
+        .cta-secondary {
+            background: transparent;
+            color: #2D4059;
+            padding: 12px 22px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid rgba(45,64,89,0.12);
+            display: inline-block;
+        }
     </style>
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
     
-    <nav style="background: #2D4059; padding: 1rem 2rem; color: white; display: flex; justify-content: space-between; align-items: center;">
-        <div style="font-size: 1.5rem; color: #FFD460; font-weight: bold; display: flex; align-items: center;">
+    <nav class="navbar">
+        <div class="brand">
             SkillSwap
         </div>
-        <div>
-            <a href="/dashboard" style="color: white; text-decoration: none; font-weight: bold; padding: 8px 16px; border-radius: 4px;">Log In</a>
+        <div class="nav-actions">
+            <a href="/dashboard" class="cta-primary">Log In</a>
         </div>
     </nav>
 
@@ -72,7 +121,8 @@
             </p>
             
             <div style="display: flex; gap: 20px; justify-content: center;">
-                <a href="/dashboard" style="background: #EA5455; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">Get Started</a>
+                <a href="/dashboard" class="cta-primary">Get Started</a>
+                <a href="/about" class="cta-secondary">Learn More</a>
             </div>
         </div>
     </main>
