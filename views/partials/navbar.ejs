@@ -20,7 +20,7 @@
             <div style="position: relative; margin-left: 15px;">
                 
                 <div onclick="toggleUserMenu()" tabindex="0" onkeydown="if(event.key === 'Enter') toggleUserMenu()" style="cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 6px; transition: background 0.2s;">
-                    <span style="font-size: 0.9em; font-weight: bold; color: white);"><%= user.name %></span>
+                    <span style="font-size: 0.9em; font-weight: bold; color: white;"><%= user.name %></span>
                     <img src="https://api.dicebear.com/9.x/<%= user.avatarStyle || 'bottts' %>/svg?seed=<%= user.name %>" 
                          class="nav-avatar" 
                          alt="Avatar"
