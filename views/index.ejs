@@ -1,113 +1,282 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>SkillSwap - <%= user ? 'Dashboard' : 'Login' %></title>
-    <link rel="stylesheet" href="/styles/main.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/styles/main.css" />
+  </head>
+  <body>
     <div id="toast-container"></div>
-    
+
     <%- include('partials/navbar') %>
-    
+
     <main>
-        
-        <% if (user) { %>
-        
-            <div style="margin-bottom: 30px; position: relative;">
-                <h3>🔍 Find Tutors & Students</h3>
-                <input type="text" id="searchInput" placeholder="Search by Name (e.g. 'Test User') or Skill (e.g. 'Math')..." 
-                       style="width: 100%; padding: 12px; font-size: 1em; border: 2px solid #ddd; border-radius: 6px;">
-                
-                <div id="searchResults" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; max-height: 300px; overflow-y: auto;">
-                </div>
-            </div>
+      <% if (user) { %>
 
-            <h2>Quick Links</h2>
+      <div style="margin-bottom: 30px; position: relative">
+        <h3>🔍 Find Tutors & Students</h3>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search by Name (e.g. 'Test User') or Skill (e.g. 'Math')..."
+          style="
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+          "
+        />
 
-            <div class="dashboard-actions" style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; background: white;">
-                    <h3>👤 Your Profile</h3>
-                    <p>Keep your skills and details up to date.</p>
-                    <a href="/profile/edit" style="display:inline-block; margin-top:10px; font-weight:bold;">Edit Profile &rarr;</a>
-                    <br>
-                    <a href="/profile/view/<%= user.id %>" style="display:inline-block; margin-top:10px; color: #555; font-size: 0.9em; text-decoration: none;">
-                        👁️ View Public Profile
-                    </a>
-                </div>
+        <div
+          id="searchResults"
+          style="
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+          "
+        ></div>
+      </div>
 
-                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; background: white;">
-                    <h3>📅 Your Sessions</h3>
-                    <p>View upcoming lessons or check requests.</p>
-                    <a href="/my_sessions" style="display:inline-block; margin-top:10px; font-weight:bold;">Manage Sessions &rarr;</a>
-                </div>
+      <h2>Quick Links</h2>
 
-                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; background: white;">
-                    <h3>💬 My Messages</h3>
-                    <p>Chat with your tutors and students.</p>
-                    <a href="/messages" style="display:inline-block; margin-top:10px; font-weight:bold;">Open Inbox &rarr;</a>
-                </div>
+      <div
+        class="dashboard-actions"
+        style="display: flex; gap: 20px; flex-wrap: wrap"
+      >
+        <div
+          style="
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 200px;
+            background: white;
+          "
+        >
+          <h3>👤 Your Profile</h3>
+          <p>Keep your skills and details up to date.</p>
+          <a
+            href="/profile/edit"
+            style="display: inline-block; margin-top: 10px; font-weight: bold"
+            >Edit Profile &rarr;</a
+          >
+          <br />
+          <a
+            href="/profile/view/<%= user.id %>"
+            style="
+              display: inline-block;
+              margin-top: 10px;
+              color: #555;
+              font-size: 0.9em;
+              text-decoration: none;
+            "
+          >
+            👁️ View Public Profile
+          </a>
+        </div>
 
-                <% if (user.isAdmin) { %>
-                    <div style="border: 1px solid #fca5a5; background: #fef2f2; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
-                        <h3 style="color:#991b1b;">🛡️ Admin Panel</h3>
-                        <p>Manage users and security reports.</p>
-                        <a href="/admin" style="display:inline-block; margin-top:10px; font-weight:bold; color:#991b1b;">Open Controls &rarr;</a>
-                    </div>
-                <% } %>
-            </div>
-            
-            <% if (typeof topTeachers !== 'undefined' && topTeachers.length > 0) { %>
-                <div style="margin-top: 40px;">
-                    <h2>🏆 Top Rated Teachers</h2>
-                    <p style="color: #666; margin-bottom: 15px;">Community favorites based on student feedback.</p>
-                    
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <% topTeachers.forEach(teacher => { %>
-                            <div style="border: 1px solid #eee; padding: 20px; border-radius: 8px; background: white; width: 200px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;">
-                                <img src="https://api.dicebear.com/7.x/<%= teacher.avatar_style || 'bottts' %>/svg?seed=<%= teacher.user_name %>" 
-                                     alt="Teacher Avatar"
-                                     style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px; background-color: #f3f4f6;">
-                                
-                                <div style="font-weight: bold; color: #333; font-size: 1.1em;"><%= teacher.user_name %></div>
-                                
-                                <div style="color: #059669; font-size: 0.9em; margin-top: 5px; font-weight: bold;">
-                                    ❤️ <%= teacher.like_count %> Likes
-                                </div>
-                                
-                                <a href="/profile/view/<%= teacher.user_id %>" style="display: inline-block; margin-top: 15px; padding: 5px 10px; background-color: #eff6ff; color: #2563eb; border-radius: 4px; text-decoration: none; font-size: 0.85em; font-weight: bold;">View Profile</a>
-                            </div>
-                        <% }) %>
-                    </div>
-                </div>
-            <% } %>
+        <div
+          style="
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 200px;
+            background: white;
+          "
+        >
+          <h3>📅 Your Sessions</h3>
+          <p>View upcoming lessons or check requests.</p>
+          <a
+            href="/my_sessions"
+            style="display: inline-block; margin-top: 10px; font-weight: bold"
+            >Manage Sessions &rarr;</a
+          >
+        </div>
 
-        <% } else { %>
+        <div
+          style="
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 200px;
+            background: white;
+          "
+        >
+          <h3>💬 My Messages</h3>
+          <p>Chat with your tutors and students.</p>
+          <a
+            href="/messages"
+            style="display: inline-block; margin-top: 10px; font-weight: bold"
+            >Open Inbox &rarr;</a
+          >
+        </div>
 
-            <div style="max-width: 400px; margin: 50px auto; padding: 30px; border: 1px solid #ddd; border-radius: 8px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <h1 style="text-align: center; color: var(--primary-color);">SkillSwap</h1>
-                <h2 style="text-align: center; font-size: 1.2em; color: #666; margin-bottom: 20px;">Log In</h2>
-
-                <form id="loginForm">
-                    <input type="email" id="email" placeholder="Email" required>
-                    <input type="password" id="password" placeholder="Password" required>
-
-                    <div style="text-align: right; margin-bottom: 15px;">
-                        <a href="/forgot-password" style="font-size: 0.9em; color: #2563eb; text-decoration: none;">
-                            Forgot Password?
-                        </a>
-                    </div>
-                    <button type="submit" style="width: 100%;">Log In</button>
-                </form>
-                
-                <p id="messageArea" style="color: red; margin-top: 10px; text-align: center;"></p>
-
-                <hr style="margin: 20px 0;">
-                
-                <p style="text-align: center;">New Student? <a href="/register" style="font-weight: bold;">Create an Account</a></p>
-            </div>
-
+        <% if (user.isAdmin) { %>
+        <div
+          style="
+            border: 1px solid #fca5a5;
+            background: #fef2f2;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 200px;
+          "
+        >
+          <h3 style="color: #991b1b">🛡️ Admin Panel</h3>
+          <p>Manage users and security reports.</p>
+          <a
+            href="/admin"
+            style="
+              display: inline-block;
+              margin-top: 10px;
+              font-weight: bold;
+              color: #991b1b;
+            "
+            >Open Controls &rarr;</a
+          >
+        </div>
         <% } %>
+      </div>
 
+      <% if (typeof topTeachers !== 'undefined' && topTeachers.length > 0) { %>
+      <div style="margin-top: 40px">
+        <h2>🏆 Top Rated Teachers</h2>
+        <p style="color: #666; margin-bottom: 15px">
+          Community favorites based on student feedback.
+        </p>
+
+        <div style="display: flex; gap: 15px; flex-wrap: wrap">
+          <% topTeachers.forEach(teacher => { %>
+          <div
+            style="
+              border: 1px solid #eee;
+              padding: 20px;
+              border-radius: 8px;
+              background: white;
+              width: 200px;
+              text-align: center;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+              transition: transform 0.2s;
+            "
+          >
+            <img
+              src="https://api.dicebear.com/7.x/<%= teacher.avatar_style || 'bottts' %>/svg?seed=<%= teacher.user_name %>"
+              alt="Teacher Avatar"
+              style="
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                margin-bottom: 10px;
+                background-color: #f3f4f6;
+              "
+            />
+
+            <div style="font-weight: bold; color: #333; font-size: 1.1em">
+              <%= teacher.user_name %>
+            </div>
+
+            <div
+              style="
+                color: #059669;
+                font-size: 0.9em;
+                margin-top: 5px;
+                font-weight: bold;
+              "
+            >
+              ❤️ <%= teacher.like_count %> Likes
+            </div>
+
+            <a
+              href="/profile/view/<%= teacher.user_id %>"
+              style="
+                display: inline-block;
+                margin-top: 15px;
+                padding: 5px 10px;
+                background-color: #eff6ff;
+                color: #2563eb;
+                border-radius: 4px;
+                text-decoration: none;
+                font-size: 0.85em;
+                font-weight: bold;
+              "
+              >View Profile</a
+            >
+          </div>
+          <% }) %>
+        </div>
+      </div>
+      <% } %> <% } else { %>
+
+      <div
+        style="
+          max-width: 400px;
+          margin: 50px auto;
+          padding: 30px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          background: white;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        "
+      >
+        <h1 style="text-align: center; color: var(--primary-color)">
+          SkillSwap
+        </h1>
+        <h2
+          style="
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+          "
+        >
+          Log In
+        </h2>
+
+        <form id="loginForm">
+          <input type="email" id="email" placeholder="Email" required />
+          <input
+            type="password"
+            id="password"
+            placeholder="Password"
+            required
+          />
+
+          <div style="text-align: right; margin-bottom: 15px">
+            <a
+              href="/forgot-password"
+              style="font-size: 0.9em; color: #2563eb; text-decoration: none"
+            >
+              Forgot Password?
+            </a>
+          </div>
+          <button type="submit" style="width: 100%">Log In</button>
+        </form>
+
+        <p
+          id="messageArea"
+          style="color: red; margin-top: 10px; text-align: center"
+        ></p>
+
+        <hr style="margin: 20px 0" />
+
+        <p style="text-align: center">
+          New Student?
+          <a href="/register" style="font-weight: bold">Create an Account</a>
+        </p>
+      </div>
+
+      <% } %>
     </main>
 
     <%- include('partials/footer') %>
@@ -115,107 +284,118 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
-        // client-side javascript logic
-        const messageArea = document.getElementById('messageArea');
+      // client-side javascript logic
+      const messageArea = document.getElementById("messageArea");
 
-        // logic runs only if the login form exists which means the user is not logged in
-        if (document.getElementById('loginForm')) {
-            document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
+      // logic runs only if the login form exists which means the user is not logged in
+      if (document.getElementById("loginForm")) {
+        document
+          .getElementById("loginForm")
+          .addEventListener("submit", handleLoginSubmit);
+      }
+
+      async function handleLoginSubmit(event) {
+        event.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        messageArea.textContent = "";
+
+        try {
+          // axios post request to the express api
+          const response = await axios.post("/api/login", {
+            email: email,
+            password: password,
+          });
+
+          if (response.status === 200) {
+            messageArea.textContent = "Login Successful! Redirecting...";
+            messageArea.style.color = "green";
+
+            // on success reload the page to load the authenticated dashboard view
+            window.location.href = "/";
+          }
+        } catch (error) {
+          let errorMessage = "An unexpected error occurred.";
+          if (error.response) {
+            errorMessage = error.response.data.message || errorMessage;
+          }
+
+          messageArea.textContent = errorMessage;
+          messageArea.style.color = "red";
+          console.error("Login Failed:", errorMessage);
         }
+      }
 
-        async function handleLoginSubmit(event) {
-            event.preventDefault(); 
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            messageArea.textContent = ''; 
+      // search bar logic which only runs if the search input exists
+      const searchInput = document.getElementById("searchInput");
+      const resultsBox = document.getElementById("searchResults");
 
+      if (searchInput) {
+        let timeout = null;
+
+        searchInput.addEventListener("input", (e) => {
+          // debounce clears the previous timer so we do not spam the server
+          clearTimeout(timeout);
+          const query = e.target.value.trim();
+
+          if (query.length < 2) {
+            resultsBox.style.display = "none";
+            return;
+          }
+
+          // waits 300ms after the user stops typing to send the request
+          timeout = setTimeout(async () => {
             try {
-                // axios post request to the express api
-                const response = await axios.post('/api/login', {
-                    email: email,
-                    password: password
-                });
+              const response = await axios.get(
+                `/api/search?q=${encodeURIComponent(query)}`
+              );
+              const results = response.data.results;
+              resultsBox.innerHTML = "";
 
-                if (response.status === 200) {
-                    messageArea.textContent = 'Login Successful! Redirecting...';
-                    messageArea.style.color = 'green';
-                    
-                    // on success reload the page to load the authenticated dashboard view
-                    window.location.href = '/'; 
-                }
+              if (results.length === 0) {
+                resultsBox.innerHTML =
+                  '<div style="padding:15px; color:#666;">No results found.</div>';
+              } else {
+                results.forEach((item) => {
+                  const subText =
+                    item.type === "skill_match"
+                      ? `Teaches: <strong>${item.sub_text}</strong>`
+                      : `Grade: ${item.sub_text || "N/A"}`;
 
-            } catch (error) {
-                let errorMessage = 'An unexpected error occurred.';
-                if (error.response) {
-                    errorMessage = error.response.data.message || errorMessage;
-                }
-                
-                messageArea.textContent = errorMessage;
-                messageArea.style.color = 'red';
-                console.error('Login Failed:', errorMessage);
-            }
-        }
-
-        // search bar logic which only runs if the search input exists
-        const searchInput = document.getElementById('searchInput');
-        const resultsBox = document.getElementById('searchResults');
-
-        if (searchInput) {
-            let timeout = null;
-
-            searchInput.addEventListener('input', (e) => {
-                // debounce clears the previous timer so we do not spam the server
-                clearTimeout(timeout);
-                const query = e.target.value.trim();
-
-                if (query.length < 2) {
-                    resultsBox.style.display = 'none';
-                    return;
-                }
-
-                // waits 300ms after the user stops typing to send the request
-                timeout = setTimeout(async () => {
-                    try {
-                        const response = await axios.get(`/api/search?q=${encodeURIComponent(query)}`);
-                        const results = response.data.results;
-                        resultsBox.innerHTML = '';
-                        
-                        if (results.length === 0) {
-                            resultsBox.innerHTML = '<div style="padding:15px; color:#666;">No results found.</div>';
-                        } else {
-                            results.forEach(item => {
-                                const subText = item.type === 'skill_match' 
-                                    ? `Teaches: <strong>${item.sub_text}</strong>` 
-                                    : `Grade: ${item.sub_text || 'N/A'}`;
-                                
-                                const div = document.createElement('div');
-                                div.style.padding = '10px 15px';
-                                div.style.borderBottom = '1px solid #eee';
-                                div.style.cursor = 'pointer';
-                                div.innerHTML = `
+                  const div = document.createElement("div");
+                  div.style.padding = "10px 15px";
+                  div.style.borderBottom = "1px solid #eee";
+                  div.style.cursor = "pointer";
+                  div.innerHTML = `
                                     <div style="font-weight:bold; color:#2563eb;">${item.user_name}</div>
                                     <div style="font-size:0.85em; color:#555;">${subText}</div>
                                 `;
-                                div.onclick = () => window.location.href = `/profile/view/${item.user_id}`;
-                                div.onmouseover = () => div.style.background = '#f9fafb';
-                                div.onmouseout = () => div.style.background = 'white';
-                                
-                                resultsBox.appendChild(div);
-                            });
-                        }
-                        resultsBox.style.display = 'block';
-                    } catch (err) { console.error("Search failed", err); }
-                }, 300);
-            });
+                  div.onclick = () =>
+                    (window.location.href = `/profile/view/${item.user_id}`);
+                  div.onmouseover = () => (div.style.background = "#f9fafb");
+                  div.onmouseout = () => (div.style.background = "white");
 
-            // hides the dropdown if the user clicks anywhere else on the page
-            document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
-                    resultsBox.style.display = 'none';
-                }
-            });
-        }
+                  resultsBox.appendChild(div);
+                });
+              }
+              resultsBox.style.display = "block";
+            } catch (err) {
+              console.error("Search failed", err);
+            }
+          }, 300);
+        });
+
+        // hides the dropdown if the user clicks anywhere else on the page
+        document.addEventListener("click", (e) => {
+          if (
+            !searchInput.contains(e.target) &&
+            !resultsBox.contains(e.target)
+          ) {
+            resultsBox.style.display = "none";
+          }
+        });
+      }
     </script>
-</body>
+  </body>
 </html>
