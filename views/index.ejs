@@ -24,6 +24,37 @@
 
             <h2 style="text-align: center">Swap Your Skills</h2>
 
+            <p>First, choose a topic. Then, select a tutor available for that skill.</p>
+
+        <form id="sessionRequestForm">
+            
+            <label for="skillTaughtId">I want to learn:</label>
+            <select id="skillTaughtId" required onchange="loadProviders()">
+                <option value="">-- Select a Topic --</option>
+                <% skills.forEach(skill => { %>
+                    <option value="<%= skill.skill_id %>"><%= skill.skill_name %></option>
+                <% }) %>
+            </select>
+
+            <label for="providerId">Select a Tutor:</label>
+            <select id="providerId" required disabled>
+                <option value="">-- Please select a topic first --</option>
+            </select>
+
+            <label for="sessionDateTime">Proposed Date & Time:</label>
+            <input type="datetime-local" id="sessionDateTime" required>
+            <p style="font-size: 0.8em; color: #666;">* The tutor will confirm the exact time with you.</p>
+
+            <label for="locationType">Preferred Location:</label>
+            <select id="locationType" required>
+                <option value="">-- Select --</option>
+                <option value="Online">Online (Virtual)</option>
+                <option value="In-Person">In-Person</option>
+            </select>
+
+            <button type="submit">Send Request</button>
+        </form>
+
 //old dash options do not delete pls :)
 
 
@@ -221,6 +252,122 @@
                 }
             });
         }
+
+         const requesterId = '<%= user.id %>';
+        // flag to prevent double submission
+        window.isProcessing = false;
+
+        // helper function to show toast notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // loads the list of tutors who teach the selected skill
+        async function loadProviders() {
+            const skillId = document.getElementById('skillTaughtId').value;
+            const providerSelect = document.getElementById('providerId');
+            
+            // reset provider dropdown
+            providerSelect.innerHTML = '<option value="">-- Loading Tutors... --</option>';
+            providerSelect.disabled = true;
+
+            if (!skillId) {
+                providerSelect.innerHTML = '<option value="">-- Please select a topic first --</option>';
+                return;
+            }
+
+            try {
+                // fetch specific providers for this skill from the api
+                const response = await axios.get(`/api/skills/${skillId}/providers`);
+                const providers = response.data.providers;
+
+                providerSelect.innerHTML = '<option value="">-- Select a Tutor --</option>';
+                
+                if (providers.length === 0) {
+                    providerSelect.innerHTML += '<option value="" disabled>No tutors found for this skill</option>';
+                    showToast("No tutors currently offer this skill.", "info");
+                } else {
+                    // populate the dropdown with available tutors
+                    providers.forEach(p => {
+                        providerSelect.innerHTML += `<option value="${p.user_id}">${p.user_name}</option>`;
+                    });
+                    providerSelect.disabled = false; 
+                }
+
+            } catch (error) {
+                console.error(error);
+                providerSelect.innerHTML = '<option value="">Error loading tutors</option>';
+                showToast("Failed to load tutors list.", "error");
+            }
+        }
+
+        // handles form submission with locking and toasts
+        document.getElementById('sessionRequestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // checks lock to prevent double clicks
+            if (window.isProcessing) return;
+            
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.textContent;
+            
+            const providerId = document.getElementById('providerId').value;
+            const skillTaughtId = document.getElementById('skillTaughtId').value;
+            const rawDateValue = document.getElementById('sessionDateTime').value;
+            const locationType = document.getElementById('locationType').value;
+
+            if (!providerId || !skillTaughtId || !rawDateValue) {
+                showToast("Please fill out all fields.", "error");
+                return;
+            }
+
+            // sets lock and updates button text
+            window.isProcessing = true;
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Sending...";
+
+            // converts local time to utc for storage
+            const localDate = new Date(rawDateValue);
+            const sessionDateTime = localDate.toISOString();
+
+            try {
+                // sends the session request to the api
+                const response = await axios.post('/api/sessions/request', {
+                    requesterId: requesterId,
+                    providerId: providerId,
+                    skillTaughtId: skillTaughtId,
+                    sessionDateTime: sessionDateTime,
+                    locationType: locationType
+                });
+
+                showToast("Request sent successfully!", "success");
+                
+                // redirects to the session list after a short delay
+                setTimeout(() => {
+                    window.location.href = '/my_sessions';
+                }, 1500);
+
+            } catch (error) {
+                const msg = error.response?.data?.message || 'Error submitting request.';
+                showToast(msg, "error");
+                
+                // resets button only on error
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+            } finally {
+                // releases lock
+                window.isProcessing = false;
+            }
+        });
     </script>
 </body>
 </html>
