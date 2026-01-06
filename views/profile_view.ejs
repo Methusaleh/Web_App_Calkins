@@ -1,150 +1,255 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title><%= pageTitle %></title>
-    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/main.css" />
     <style>
-        .profile-header { background: #fbdddd ; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 5px solid #EA5455; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-right: 5px; color: white; }
-        .badge-virtual { background-color: #3b82f6; } 
-        .badge-person { background-color: #10b981; }  
-        .badge-both { background-color: #ea5455cc; }    
-        
-        .skill-list { list-style: none; padding: 0; }
-        .skill-item { background: white; border: 1px solid #eee; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
-        
-        .rating-box { background: #fffbeb; border: 5px solid #fcd34d; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
-        .rating-score { font-size: 2em; font-weight: bold; color: #d97706; }
+      .profile-header {
+        background: #fbdddd;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 5px solid #ea5455;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8em;
+        margin-right: 5px;
+        color: white;
+      }
+      .badge-virtual {
+        background-color: #3b82f6;
+      }
+      .badge-person {
+        background-color: #10b981;
+      }
+      .badge-both {
+        background-color: #ea5455cc;
+      }
+
+      .skill-list {
+        list-style: none;
+        padding: 0;
+      }
+      .skill-item {
+        background: white;
+        border: 1px solid #eee;
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .rating-box {
+        background: #fffbeb;
+        border: 5px solid #fcd34d;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .rating-score {
+        font-size: 2em;
+        font-weight: bold;
+        color: #d97706;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="toast-container"></div>
 
     <%- include('partials/navbar') %>
 
     <main>
-        <div class="profile-header">
-            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
-                <img src="https://api.dicebear.com/9.x/<%= profile.avatar_style %>/svg?seed=<%= profile.user_name %>" 
-                     alt="Profile Avatar" 
-                     style="width: 80px; height: 80px; border-radius: 50%; background: white; padding: 5px;">
-                
-                <div>
-                    <h1 style="margin: 0; line-height: 1;"><%= profile.user_name %></h1>
-                    <p style="margin: 5px 0 0 0; color: #666;"><%= profile.email %></p>
-                </div>
-            </div>
-            
-            <p><strong>Grade:</strong> <%= profile.grade_level || 'Not specified' %> | <strong>School:</strong> <%= profile.school_college || 'Not specified' %></p>
-            
-            <% if (user.id === profile.user_id) { %>
-                <a href="/profile/edit" style="background: #333; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">Edit My Profile</a>
-            <% } else { %>
-                <a href="/session/request" style="background: #2563eb; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">Request Session</a>
+      <div class="profile-header">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+          "
+        >
+          <img
+            src="https://api.dicebear.com/9.x/<%= profile.avatar_style %>/svg?seed=<%= profile.user_name %>"
+            alt="Profile Avatar"
+            style="
+              width: 80px;
+              height: 80px;
+              border-radius: 50%;
+              background: white;
+              padding: 5px;
+            "
+          />
 
-                <a href="/messages/<%= profile.user_id %>" style="background: #059669; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; margin-left: 10px;">
-                    💬 Message
-                </a>
-                
-                <button onclick="reportUser('<%= profile.user_id %>')" style="background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 4px; margin-left: 10px; cursor: pointer;">
-                    ⚠️ Report User
-                </button>
-            <% } %>
+          <div>
+            <h1 style="margin: 0; line-height: 1"><%= profile.user_name %></h1>
+            <p style="margin: 5px 0 0 0; color: #666"><%= profile.email %></p>
+          </div>
         </div>
 
-        <div class="rating-box">
-            <h3>Community Reputation</h3>
-            <% if (ratingStats.count > 0) { %>
-                <div class="rating-score"><%= ratingStats.percent %>% Positive</div>
-                <p><%= ratingStats.likes %> Likes from <%= ratingStats.count %> Total Sessions</p>
+        <p>
+          <strong>Grade:</strong> <%= profile.grade_level || 'Not specified' %>
+          | <strong>School:</strong> <%= profile.school_college || 'Not
+          specified' %>
+        </p>
+
+        <% if (String(user.id) === String(profile.user_id)) { %>
+        <a
+          href="/profile/edit"
+          style="
+            background: #333;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+          "
+          >Edit My Profile</a
+        >
+        <% } else { %>
+        <a
+          href="/session/request"
+          style="
+            background: #2563eb;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+          "
+          >Request Session</a
+        >
+
+        <a
+          href="/messages/<%= profile.user_id %>"
+          style="
+            background: #059669;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-left: 10px;
+          "
+        >
+          💬 Message
+        </a>
+
+        <button
+          onclick="reportUser('<%= profile.user_id %>')"
+          style="
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+          "
+        >
+          ⚠️ Report User
+        </button>
+        <% } %>
+      </div>
+
+      <div class="rating-box">
+        <h3>Community Reputation</h3>
+        <% if (ratingStats.count > 0) { %>
+        <div class="rating-score"><%= ratingStats.percent %>% Positive</div>
+        <p>
+          <%= ratingStats.likes %> Likes from <%= ratingStats.count %> Total
+          Sessions
+        </p>
+        <% } else { %>
+        <p>
+          No ratings yet. Be the first to learn from <%= profile.user_name %>!
+        </p>
+        <% } %>
+      </div>
+
+      <hr />
+
+      <h2>Skills I Teach</h2>
+      <% if (skillsOffered.length === 0) { %>
+      <p>No skills listed yet.</p>
+      <% } else { %>
+      <ul class="skill-list">
+        <% skillsOffered.forEach(skill => { %>
+        <li class="skill-item">
+          <strong><%= skill.skill_name %></strong>
+          <span>
+            <% if (skill.is_virtual_only) { %>
+            <span class="badge badge-virtual">Virtual Only</span>
+            <% } else if (skill.is_inperson_only) { %>
+            <span class="badge badge-person">In-Person Only</span>
             <% } else { %>
-                <p>No ratings yet. Be the first to learn from <%= profile.user_name %>!</p>
+            <span class="badge badge-both">Virtual & In-Person</span>
             <% } %>
-        </div>
+          </span>
+        </li>
+        <% }) %>
+      </ul>
+      <% } %>
 
-        <hr>
+      <hr />
 
-        <h2>Skills I Teach</h2>
-        <% if (skillsOffered.length === 0) { %>
-            <p>No skills listed yet.</p>
-        <% } else { %>
-            <ul class="skill-list">
-                <% skillsOffered.forEach(skill => { %>
-                    <li class="skill-item">
-                        <strong><%= skill.skill_name %></strong>
-                        <span>
-                            <% if (skill.is_virtual_only) { %>
-                                <span class="badge badge-virtual">Virtual Only</span>
-                            <% } else if (skill.is_inperson_only) { %>
-                                <span class="badge badge-person">In-Person Only</span>
-                            <% } else { %>
-                                <span class="badge badge-both">Virtual & In-Person</span>
-                            <% } %>
-                        </span>
-                    </li>
-                <% }) %>
-            </ul>
-        <% } %>
-
-        <hr>
-
-        <h2>Skills I Want to Learn</h2>
-        <% if (skillsSought.length === 0) { %>
-            <p>Not currently seeking any specific skills.</p>
-        <% } else { %>
-            <ul>
-                <% skillsSought.forEach(skill => { %>
-                    <li><%= skill.skill_name %></li>
-                <% }) %>
-            </ul>
-        <% } %>
-
+      <h2>Skills I Want to Learn</h2>
+      <% if (skillsSought.length === 0) { %>
+      <p>Not currently seeking any specific skills.</p>
+      <% } else { %>
+      <ul>
+        <% skillsSought.forEach(skill => { %>
+        <li><%= skill.skill_name %></li>
+        <% }) %>
+      </ul>
+      <% } %>
     </main>
     <%- include('partials/footer') %>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    
+
     <script>
-        // creates a temporary toast notification on the screen
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            
-            // triggers the slide in animation
-            requestAnimationFrame(() => toast.classList.add('show'));
-            
-            // removes the toast after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+      // creates a temporary toast notification on the screen
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
 
-        // allows a user to report another user for bad behavior
-        async function reportUser(reportedUserId) {
-            // asks the user to type a reason for the report
-            const reason = prompt("Please describe the issue with this user:");
-            
-            // if the user clicks cancel do nothing
-            if (!reason) return; 
+        // triggers the slide in animation
+        requestAnimationFrame(() => toast.classList.add("show"));
 
-            try {
-                // sends the report details to the api
-                const response = await axios.post('/api/reports', {
-                    reportedUserId: reportedUserId,
-                    reason: reason
-                });
-                
-                // shows a success message if it worked
-                showToast(response.data.message, "success");
-            } catch (error) {
-                console.error(error);
-                showToast("Failed to submit report. Please try again.", "error");
-            }
+        // removes the toast after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      // allows a user to report another user for bad behavior
+      async function reportUser(reportedUserId) {
+        // asks the user to type a reason for the report
+        const reason = prompt("Please describe the issue with this user:");
+
+        // if the user clicks cancel do nothing
+        if (!reason) return;
+
+        try {
+          // sends the report details to the api
+          const response = await axios.post("/api/reports", {
+            reportedUserId: reportedUserId,
+            reason: reason,
+          });
+
+          // shows a success message if it worked
+          showToast(response.data.message, "success");
+        } catch (error) {
+          console.error(error);
+          showToast("Failed to submit report. Please try again.", "error");
         }
+      }
     </script>
-</body>
+  </body>
 </html>

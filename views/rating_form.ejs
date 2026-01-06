@@ -1,117 +1,186 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title><%= pageTitle %></title>
-    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/main.css" />
     <style>
-        /* specific styles for the rating form container */
-        .rating-container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; }
-        
-        /* styles for the radio button options to ensure alignment */
-        .radio-option { display: flex; align-items: center; margin-bottom: 10px; font-size: 1.1em; cursor: pointer; }
-        .radio-option input[type="radio"] { margin-right: 10px; transform: scale(1.2); width: auto; display: inline-block; margin-bottom: 0; }
-        
-        /* styling for the feedback text area */
-        textarea { width: 100%; height: 100px; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; }
+      /* specific styles for the rating form container */
+      .rating-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      /* styles for the radio button options to ensure alignment */
+      .radio-option {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+        cursor: pointer;
+      }
+      .radio-option input[type="radio"] {
+        margin-right: 10px;
+        transform: scale(1.2);
+        width: auto;
+        display: inline-block;
+        margin-bottom: 0;
+      }
+
+      /* styling for the feedback text area */
+      textarea {
+        width: 100%;
+        height: 100px;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="toast-container"></div>
     <%- include('partials/navbar') %>
 
     <main>
-        <div class="rating-container">
-            <h1>Rate Your Session</h1>
-            <p>How was your session with <strong><%= session.provider_name %></strong>?</p>
-            
-            <form id="ratingForm">
-                <input type="hidden" id="sessionId" value="<%= session.session_id %>">
-                <input type="hidden" id="raterId" value="<%= user.id %>">
-                <input type="hidden" id="rateeId" value="<%= session.provider_id %>">
+      <div class="rating-container">
+        <h1>Rate Your Session</h1>
+        <p>
+          How was your session with
+          <strong><%= session.provider_name %></strong>?
+        </p>
 
-                <label><strong>Would you recommend this teacher?</strong></label>
-                <div style="margin: 20px 0; padding: 10px; background: white; border: 1px solid #eee;">
-                    <label class="radio-option">
-                        <input type="radio" name="likeStatus" value="true" required> 
-                        👍 Yes (Like)
-                    </label>
-                    <label class="radio-option">
-                        <input type="radio" name="likeStatus" value="false"> 
-                        👎 No
-                    </label>
-                </div>
+        <form id="ratingForm">
+          <input
+            type="hidden"
+            id="sessionId"
+            value="<%= session.session_id %>"
+          />
+          <input type="hidden" id="raterId" value="<%= user.id %>" />
+          <input
+            type="hidden"
+            id="rateeId"
+            value="<%= session.provider_id %>"
+          />
 
-                <label for="feedbackText"><strong>Additional Comments (Optional):</strong></label>
-                <textarea id="feedbackText" placeholder="What did you learn? How was the teaching style?"></textarea>
+          <label><strong>Would you recommend this teacher?</strong></label>
+          <div
+            style="
+              margin: 20px 0;
+              padding: 10px;
+              background: white;
+              border: 1px solid #eee;
+            "
+          >
+            <label class="radio-option">
+              <input type="radio" name="likeStatus" value="true" required />
+              👍 Yes (Like)
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="likeStatus" value="false" />
+              👎 No
+            </label>
+          </div>
 
-                <button type="submit" style="margin-top: 15px;">Submit Rating</button>
-            </form>
-        </div>
+          <label for="feedbackText"
+            ><strong>Additional Comments (Optional):</strong></label
+          >
+          <textarea
+            id="feedbackText"
+            placeholder="What did you learn? How was the teaching style?"
+          ></textarea>
+
+          <button type="submit" style="margin-top: 15px">Submit Rating</button>
+        </form>
+      </div>
     </main>
     <%- include('partials/footer') %>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // helper function to show toast notifications
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            
-            // triggers the slide in animation
-            requestAnimationFrame(() => toast.classList.add('show'));
-            
-            // removes the toast after 3 seconds
+      // helper function to show toast notifications
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        // triggers the slide in animation
+        requestAnimationFrame(() => toast.classList.add("show"));
+
+        // removes the toast after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      // handles the form submission
+      document
+        .getElementById("ratingForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          // 1. Select the button so we can lock it
+          const submitBtn = document.querySelector('button[type="submit"]');
+          const originalText = submitBtn.textContent;
+
+          // capture form values
+          const sessionId = document.getElementById("sessionId").value;
+          const raterId = document.getElementById("raterId").value;
+          const rateeId = document.getElementById("rateeId").value;
+          const feedbackText = document.getElementById("feedbackText").value;
+
+          // determine which radio button was selected
+          const likeRadio = document.querySelector(
+            'input[name="likeStatus"]:checked'
+          );
+          const likeStatus = likeRadio ? likeRadio.value === "true" : null;
+
+          // ensures a rating is actually selected
+          if (likeStatus === null) {
+            showToast(
+              "Please select whether you recommend this teacher.",
+              "error"
+            );
+            return; // Stop here (don't disable the button yet)
+          }
+
+          // 2. LOCK THE BUTTON (Visual Feedback + Prevention)
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Submitting...";
+
+          try {
+            // sends the rating to the backend api
+            await axios.post("/api/sessions/rate", {
+              sessionId: sessionId,
+              raterId: raterId,
+              rateeId: rateeId,
+              likeStatus: likeStatus,
+              feedbackText: feedbackText,
+            });
+
+            showToast("Rating submitted! Redirecting...", "success");
+
+            // redirects the user back to their sessions list
             setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+              window.location.href = "/my_sessions";
+            }, 1500);
+          } catch (error) {
+            // 3. UNLOCK THE BUTTON (If it fails, let them try again)
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
 
-        // handles the form submission
-        document.getElementById('ratingForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // capture form values
-            const sessionId = document.getElementById('sessionId').value;
-            const raterId = document.getElementById('raterId').value;
-            const rateeId = document.getElementById('rateeId').value;
-            const feedbackText = document.getElementById('feedbackText').value;
-            
-            // determine which radio button was selected
-            const likeRadio = document.querySelector('input[name="likeStatus"]:checked');
-            const likeStatus = likeRadio ? (likeRadio.value === 'true') : null;
-
-            // ensures a rating is actually selected
-            if (likeStatus === null) {
-                showToast("Please select whether you recommend this teacher.", "error");
-                return;
-            }
-
-            try {
-                // sends the rating to the backend api
-                await axios.post('/api/sessions/rate', {
-                    sessionId: sessionId,
-                    raterId: raterId,
-                    rateeId: rateeId,
-                    likeStatus: likeStatus,
-                    feedbackText: feedbackText
-                });
-
-                showToast("Rating submitted! Redirecting...", "success");
-                
-                // redirects the user back to their sessions list
-                setTimeout(() => {
-                    window.location.href = '/my_sessions';
-                }, 1500);
-
-            } catch (error) {
-                const msg = error.response?.data?.message || 'Error submitting rating.';
-                showToast(msg, "error");
-            }
+            const msg =
+              error.response?.data?.message || "Error submitting rating.";
+            showToast(msg, "error");
+          }
         });
     </script>
-</body>
+  </body>
 </html>
