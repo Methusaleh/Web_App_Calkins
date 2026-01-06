@@ -1,71 +1,72 @@
 <style>
-    /* Footer-specific styles to keep it clean */
-    .site-footer {
-        background-color: #2D4059;
-        border-top: 1px solid var(--border-color);
-        padding: 40px 20px;
-        margin-top: 60px; /* Push it away from content */
-        text-align: center;
-        color: white;
-        font-size: 0.9em;
-    }
+  /* Footer-specific styles to keep it clean */
+  .site-footer {
+    background-color: #2d4059;
+    border-top: 1px solid var(--border-color);
+    padding: 40px 20px;
+    margin-top: 60px; /* Push it away from content */
+    text-align: center;
+    color: white;
+    font-size: 0.9em;
+  }
 
-    .footer-content {
-        max-width: 1000px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        align-items: center;
-    }
+  .footer-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
 
-    .footer-section h4 {
-        margin-bottom: 5px;
-        color: var(--text-main);
-        font-size: 1.1em;
-    }
+  .footer-section h4 {
+    margin-bottom: 5px;
+    color: var(--highlight-color);
+    font-size: 1.1em;
+  }
 
-    .footer-links a {
-        margin: 0 10px;
-        color: var(--text-muted);
-        text-decoration: none;
-    }
+  .footer-links a {
+    margin: 0 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+  }
 
-    .footer-links a:hover {
-        color: var(--highlight-color);
-    }
+  .footer-links a:hover {
+    color: var(--highlight-color);
+  }
 </style>
 
 <footer class="site-footer">
-    <div class="footer-content">
-        
-        <div class="footer-section">
-            <h4>SkillSwap: Student Talent Exchange Platform</h4>
-            <p>
-                <strong>Chapter:</strong> Reno Chapter | 
-                <strong>School:</strong> Francis Tuttle Institute of Technology
-            </p>
-            <p>
-                <strong>Location:</strong> Oklahoma City, Oklahoma | 
-                <strong>Year:</strong> 2026
-            </p>
-            <p>
-                <strong>Team Members:</strong> Aaron Kipf, Austin Coco, Michael Crawford, Zach All
-            </p>
-        </div>
-
-        <div class="footer-links">
-            <a href="/">Home</a>
-            <a href="/session/request">Find a Tutor</a>
-            <% if (typeof user !== 'undefined' && user) { %>
-                <a href="/profile/edit">My Profile</a>
-            <% } else { %>
-                <a href="/login">Log In</a>
-            <% } %>
-        </div>
-
-        <p style="margin-top: 20px; font-size: 0.8em;">
-            &copy; 2026 SkillSwap. Created for Business Professionals of America (V04).
-        </p>
+  <div class="footer-content">
+    <div class="footer-section">
+      <h4>SkillSwap: Student Talent Exchange Platform</h4>
+      <p>
+        <strong>Chapter:</strong> Reno Chapter |
+        <strong>School:</strong> Francis Tuttle Institute of Technology
+      </p>
+      <p>
+        <strong>Location:</strong> Oklahoma City, Oklahoma |
+        <strong>Year:</strong> 2026
+      </p>
+      <p>
+        <strong>Team Members:</strong> Aaron Kipf, Austin Coco, Michael
+        Crawford, Zach All
+      </p>
     </div>
+
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/session/request">Find a Tutor</a>
+      <% if (typeof user !== 'undefined' && user) { %>
+      <a href="/profile/edit">My Profile</a>
+      <% } else { %>
+      <a href="/login">Log In</a>
+      <% } %>
+    </div>
+
+    <p style="margin-top: 20px; font-size: 0.8em">
+      &copy; 2026 SkillSwap. Created for Business Professionals of America
+      (V04).
+    </p>
+  </div>
 </footer>
