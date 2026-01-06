@@ -53,7 +53,7 @@ h1, h2, h3 {
 }
 
 h1 { 
-    background: #linear-gradient(135deg, var(--secondary-color), #2D4059);
+    background: linear-gradient(135deg, var(--secondary-color), #2D4059);
 ;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
