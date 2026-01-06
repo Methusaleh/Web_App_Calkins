@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About - SkillSwap</title>
+    <link rel="stylesheet" href="/styles/main.css" />
+    <style>
+      .about-section {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+        border: 1px solid #eee;
+      }
+      .tech-tag {
+        display: inline-block;
+        background: #f0f9ff;
+        color: #0284c7;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 0.9em;
+        font-weight: bold;
+        margin: 0 5px 5px 0;
+        border: 1px solid #bae6fd;
+      }
+    </style>
+  </head>
+  <body
+    style="
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background-color: #f9fafb;
+    "
+  >
+    <%- include('partials/navbar') %>
+
+    <main>
+      <div style="text-align: center; margin-bottom: 40px">
+        <h1 style="font-size: 2.5em; margin-bottom: 10px">About SkillSwap</h1>
+        <p style="color: #666; font-size: 1.2em">
+          Connecting students who want to learn together.
+        </p>
+      </div>
+
+      <div class="about-section">
+        <h2>Our Mission</h2>
+        <p>
+          SkillSwap was created to solve a common problem in schools:
+          <strong>finding peer tutors is hard.</strong>
+          Bulletin boards are outdated, and social media is too noisy. SkillSwap
+          provides a dedicated, safe platform for students to list the skills
+          they can teach and find the help they need.
+        </p>
+      </div>
+
+      <div class="about-section">
+        <h2>Technical Specifications</h2>
+        <p style="margin-bottom: 15px">
+          This application was built from scratch using modern web development
+          technologies:
+        </p>
+        <div>
+          <span class="tech-tag">Node.js</span>
+          <span class="tech-tag">Express.js</span>
+          <span class="tech-tag">PostgreSQL</span>
+          <span class="tech-tag">EJS Templating</span>
+          <span class="tech-tag">CSS3 Variables</span>
+          <span class="tech-tag">Axios (Async API)</span>
+          <span class="tech-tag">Bcrypt Hashing</span>
+        </div>
+        <p style="margin-top: 15px; font-size: 0.9em; color: #555">
+          <strong>Security Features:</strong> Secure session management,
+          password hashing, SQL injection protection, and role-based access
+          control for Administrators.
+        </p>
+      </div>
+
+      <div class="about-section">
+        <h2>The Development Team</h2>
+        <p>
+          <strong>Francis Tuttle Institute of Technology (Reno Chapter)</strong
+          ><br />
+          Business Professionals of America - Web Application Team (2026)
+        </p>
+        <ul style="margin-top: 10px; color: #333">
+          <li>Aaron Kipf</li>
+          <li>Austin Coco</li>
+          <li>Michael Crawford</li>
+          <li>Zach All</li>
+        </ul>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px">
+        <a
+          href="/register"
+          class="btn-primary"
+          style="text-decoration: none; padding: 12px 30px; font-size: 1.1em"
+        >
+          Join the Community &rarr;
+        </a>
+      </div>
+    </main>
+
+    <%- include('partials/footer') %>
+  </body>
+</html>

@@ -191,6 +191,14 @@ app.get("/", (req, res) => {
   res.render("landing");
 });
 
+// About / Tech Spec Page
+app.get("/about", (req, res) => {
+  res.render("about", {
+    pageTitle: "About SkillSwap",
+    user: req.session.user || null,
+  });
+});
+
 // dashboard route
 app.get("/dashboard", async (req, res) => {
   let dbStatus = "Failed";
