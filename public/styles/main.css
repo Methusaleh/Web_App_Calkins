@@ -98,16 +98,20 @@ button:active {
   transform: translateY(0);
 }
 
-/* Blue button variant - for backward compatibility with existing buttons */
 .button-blue,
 .btn-primary {
-  background: linear-gradient(135deg, #450693, #370576);
-  box-shadow: 0 2px 8px rgba(69, 6, 147, 0.3);
+  background: #ea5455; /* The specific Red/Coral from landing page */
+  color: white !important;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .button-blue:hover,
 .btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(69, 6, 147, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(234, 84, 85, 0.4);
+  background: #d63031; /* Slightly darker red for hover effect */
 }
 
 /* Secondary button style */
