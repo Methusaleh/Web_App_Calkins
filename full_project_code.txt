@@ -1290,16 +1290,23 @@ button:active {
   transform: translateY(0);
 }
 
-/* Blue button variant - for backward compatibility with existing buttons */
+/* Red Button -> Yellow Text on Hover (Instant, No Fade) */
 .button-blue,
 .btn-primary {
-  background: linear-gradient(135deg, #450693, #370576);
-  box-shadow: 0 2px 8px rgba(69, 6, 147, 0.3);
+  background: #ea5455; /* Coral Red Background */
+  color: white !important; /* White Text Default */
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-decoration: none; /* vital since we are using <a> tags */
+  display: inline-block; /* ensures padding works on links */
 }
 
 .button-blue:hover,
 .btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(69, 6, 147, 0.4);
+  background: #ea5455; /* Background stays Red */
+  color: #ffd460 !important; /* Text turns Sunny Yellow */
+  box-shadow: 0 6px 12px rgba(234, 84, 85, 0.4);
+  /* Note: No transition or transform property here */
 }
 
 /* Secondary button style */

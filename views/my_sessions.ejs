@@ -1,108 +1,163 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title><%= pageTitle %></title>
-    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/main.css" />
     <style>
-        /* styles for the dashboard table */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        
-        /* status color coding */
-        .status-requested { color: #d97706; font-weight: bold; } /* amber */
-        .status-confirmed { color: #059669; font-weight: bold; } /* green */
-        .status-denied, .status-cancelled { color: #dc2626; }    /* red */
-        .status-completed { color: #2563eb; }                    /* blue */
+      /* styles for the dashboard table */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #f4f4f4;
+      }
 
-        /* action buttons styling */
-        .btn-action { padding: 5px 10px; font-size: 0.9em; margin-right: 5px; cursor: pointer; border-radius: 4px; border:none; color: white; background-color: var(--primary-color);}
-        .btn-danger { background-color: #ef4444; }
+      /* status color coding */
+      .status-requested {
+        color: #d97706;
+        font-weight: bold;
+      } /* amber */
+      .status-confirmed {
+        color: #059669;
+        font-weight: bold;
+      } /* green */
+      .status-denied,
+      .status-cancelled {
+        color: #dc2626;
+      } /* red */
+      .status-completed {
+        color: #2563eb;
+      } /* blue */
+
+      /* action buttons styling */
+      .btn-action {
+        padding: 5px 10px;
+        font-size: 0.9em;
+        margin-right: 5px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: none;
+        color: white;
+        background-color: var(--primary-color);
+      }
+      .btn-danger {
+        background-color: #ef4444;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="toast-container"></div>
     <%- include('partials/navbar') %>
-    
+
     <main>
-        <div style="margin-bottom: 20px;">
-            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Dashboard</a>
-        </div>
+      <div style="margin-bottom: 20px">
+        <a
+          href="/"
+          style="text-decoration: none; color: #333; font-weight: bold"
+          >&larr; Back to Dashboard</a
+        >
+      </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 style="margin: 0;">My Sessions</h1> 
-            <a href="/session/request" style="background: #ea5455cc; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                + New Request
-            </a>
-        </div>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        "
+      >
+        <h1 style="margin: 0">My Sessions</h1>
+        <a
+          href="/session/request"
+          style="
+            background: #ea5455cc;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+          "
+        >
+          + New Request
+        </a>
+      </div>
 
-        <p id="loadingMsg">Loading your session history...</p>
-        
-        <table id="sessionsTable" style="display:none;">
-            <thead>
-                <tr>
-                    <th>Date/Time</th>
-                    <th>Role</th>
-                    <th>With</th>
-                    <th>Topic</th>
-                    <th>Status</th>
-                    <th>Actions / Link</th>
-                </tr>
-            </thead>
-            <tbody id="sessionsBody">
-                </tbody>
-        </table>
+      <p id="loadingMsg">Loading your session history...</p>
+
+      <table id="sessionsTable" style="display: none">
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>Role</th>
+            <th>With</th>
+            <th>Topic</th>
+            <th>Status</th>
+            <th>Actions / Link</th>
+          </tr>
+        </thead>
+        <tbody id="sessionsBody"></tbody>
+      </table>
     </main>
     <%- include('partials/footer') %>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // global flag to prevent multiple clicks
-        window.isProcessing = false;
+      // global flag to prevent multiple clicks
+      window.isProcessing = false;
 
-        // helper function to show toast notifications
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            
-            // create the toast element
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
+      // helper function to show toast notifications
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
 
-            // add to dom
-            container.appendChild(toast);
+        // create the toast element
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
 
-            // trigger animation
-            requestAnimationFrame(() => {
-                toast.classList.add('show');
-            });
+        // add to dom
+        container.appendChild(toast);
 
-            // remove after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }, 3000);
-        }
+        // trigger animation
+        requestAnimationFrame(() => {
+          toast.classList.add("show");
+        });
 
-        // current user id from server session
-        const currentUserId = '<%= user.id %>'; 
+        // remove after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => {
+            toast.remove();
+          }, 300);
+        }, 3000);
+      }
 
-        // fetch sessions when the page loads
-        document.addEventListener('DOMContentLoaded', fetchSessions);
+      // current user id from server session
+      const currentUserId = "<%= user.id %>";
 
-        async function fetchSessions() {
-            try {
-                // calls the backend api to get the user's session history
-                const response = await axios.get(`/api/sessions/user/${currentUserId}`);
-                const sessions = response.data.sessions;
-                
-                const tbody = document.getElementById('sessionsBody');
-                tbody.innerHTML = ''; 
+      // fetch sessions when the page loads
+      document.addEventListener("DOMContentLoaded", fetchSessions);
 
-                // display empty state if no sessions exist
-                if (sessions.length === 0) {
-                    document.getElementById('loadingMsg').innerHTML = `
+      async function fetchSessions() {
+        try {
+          // calls the backend api to get the user's session history
+          const response = await axios.get(
+            `/api/sessions/user/${currentUserId}`
+          );
+          const sessions = response.data.sessions;
+
+          const tbody = document.getElementById("sessionsBody");
+          tbody.innerHTML = "";
+
+          // display empty state if no sessions exist
+          if (sessions.length === 0) {
+            document.getElementById("loadingMsg").innerHTML = `
                         <div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
                             <h3>You haven't scheduled any sessions yet!</h3>
                             <p style="color: #666; margin-bottom: 20px;">Find a tutor or offer your skills to get started.</p>
@@ -111,177 +166,190 @@
                             <a href="/profile/edit" style="color: #ea5455cc;">Update Profile</a>
                         </div>
                     `;
-                    return;
-                }
+            return;
+          }
 
-                // loop through each session to create table rows
-                sessions.forEach(session => {
-                    const row = document.createElement('tr');
-                    
-                    // determines if the current user is the teacher or student
-                    // converts ids to strings to avoid type mismatches
-                    const isTeacher = (String(currentUserId) === String(session.provider_id));
-                    const myRole = isTeacher ? 'Teacher' : 'Student';
-                    const otherPersonName = isTeacher ? session.requester_name : session.provider_name;
+          // loop through each session to create table rows
+          sessions.forEach((session) => {
+            const row = document.createElement("tr");
 
-                    // formats the date for display
-                    const dateObj = new Date(session.session_date_time);
-                    const dateStr = dateObj.toLocaleString(); 
+            // determines if the current user is the teacher or student
+            // converts ids to strings to avoid type mismatches
+            const isTeacher =
+              String(currentUserId) === String(session.provider_id);
+            const myRole = isTeacher ? "Teacher" : "Student";
+            const otherPersonName = isTeacher
+              ? session.requester_name
+              : session.provider_name;
+            const otherPersonId = isTeacher
+              ? session.requester_id
+              : session.provider_id;
 
-                    let actionsHtml = '';
-                    
-                    // logic for displaying buttons based on session status
-                    if (session.status === 'Requested') {
-                        if (isTeacher) {
-                            // teacher can confirm or deny
-                            actionsHtml = `
+            // formats the date for display
+            const dateObj = new Date(session.session_date_time);
+            const dateStr = dateObj.toLocaleString();
+
+            let actionsHtml = "";
+
+            // logic for displaying buttons based on session status
+            if (session.status === "Requested") {
+              if (isTeacher) {
+                // teacher can confirm or deny
+                actionsHtml = `
                                 <button class="btn-action" onclick="confirmSession(${session.session_id}, '${session.location_type}')">Confirm</button>
                                 <button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Deny</button>
                             `;
-                        } else {
-                            // student can cancel
-                            actionsHtml = `<button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Cancel Request</button>`;
-                        }
-                    } 
-                    else if (session.status === 'Confirmed') {
-                        // show meet link if online
-                        if (session.location_type === 'Online' && session.meeting_url) {
-                            actionsHtml += `<a href="${session.meeting_url}" target="_blank" style="font-weight:bold;">🎥 Join Meeting</a><br><br>`;
-                        } else if (session.location_type === 'In-Person') {
-                            actionsHtml += `<span>📍 In-Person</span><br><br>`;
-                        }
+              } else {
+                // student can cancel
+                actionsHtml = `<button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Cancel Request</button>`;
+              }
+            } else if (session.status === "Confirmed") {
+              // show meet link if online
+              if (session.location_type === "Online" && session.meeting_url) {
+                actionsHtml += `<a href="${session.meeting_url}" target="_blank" style="font-weight:bold;">🎥 Join Meeting</a><br><br>`;
+              } else if (session.location_type === "In-Person") {
+                actionsHtml += `<span>📍 In-Person</span><br><br>`;
+              }
 
-                        if (isTeacher) {
-                            // teacher can mark complete
-                            actionsHtml += `<button class="btn-action" onclick="completeSession(${session.session_id})">Mark Complete</button>`;
-                        } else {
-                            // student just waits
-                            actionsHtml += `<span style="font-size:0.8em; color:gray;">Waiting for teacher to complete</span>`;
-                        }
-                    } 
-                    else if (session.status === 'Completed') {
-                         if (!isTeacher) {
-                             // student view check if already rated
-                             if (session.is_rated) {
-                                 actionsHtml = '<span style="color:#059669; font-weight:bold;">✓ Rated</span>';
-                             } else {
-                                 actionsHtml = `<a href="/session/rate/${session.session_id}" class="btn-action">Rate Teacher</a>`;
-                             }
-                         } else {
-                             // teacher view
-                             actionsHtml = '<span>✅ Complete</span>';
-                         }
-                    }
-                    else {
-                        // denied or cancelled state
-                        actionsHtml = '<span>---</span>';
-                    }
+              if (isTeacher) {
+                // teacher can mark complete
+                actionsHtml += `<button class="btn-action" onclick="completeSession(${session.session_id})">Mark Complete</button>`;
+              } else {
+                // student just waits
+                actionsHtml += `<span style="font-size:0.8em; color:gray;">Waiting for teacher to complete</span>`;
+              }
+            } else if (session.status === "Completed") {
+              if (!isTeacher) {
+                // student view check if already rated
+                if (session.is_rated) {
+                  actionsHtml =
+                    '<span style="color:#059669; font-weight:bold;">✓ Rated</span>';
+                } else {
+                  actionsHtml = `<a href="/session/rate/${session.session_id}" class="btn-action">Rate Teacher</a>`;
+                }
+              } else {
+                // teacher view
+                actionsHtml = "<span>✅ Complete</span>";
+              }
+            } else {
+              // denied or cancelled state
+              actionsHtml = "<span>---</span>";
+            }
 
-                    row.innerHTML = `
+            row.innerHTML = `
                         <td>${dateStr}</td>
                         <td>${myRole}</td>
-                        <td>${otherPersonName}</td>
+                        <td>
+                            <a href="/profile/view/${otherPersonId}" style="font-weight: bold; color: var(--primary-color);">
+                                ${otherPersonName}
+                            </a>
+                        </td>
                         <td>${session.skill_name}</td>
-                        <td class="status-${session.status.toLowerCase()}">${session.status}</td>
+                        <td class="status-${session.status.toLowerCase()}">${
+              session.status
+            }</td>
                         <td>${actionsHtml}</td>
                     `;
-                    tbody.appendChild(row);
-                });
+            tbody.appendChild(row);
+          });
 
-                document.getElementById('loadingMsg').style.display = 'none';
-                document.getElementById('sessionsTable').style.display = 'table';
+          document.getElementById("loadingMsg").style.display = "none";
+          document.getElementById("sessionsTable").style.display = "table";
+        } catch (error) {
+          console.error(error);
+          document.getElementById("loadingMsg").textContent =
+            "Error loading session history.";
+        }
+      }
 
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loadingMsg').textContent = "Error loading session history.";
-            }
+      // function to confirm a session
+      async function confirmSession(id, locationType) {
+        // check lock to prevent double clicks
+        if (window.isProcessing) return;
+
+        // set lock
+        window.isProcessing = true;
+
+        let meetUrl = null;
+
+        // handle url prompt for online sessions
+        if (locationType === "Online") {
+          meetUrl = prompt(
+            "Please enter the Google Meet URL for this session:"
+          );
+
+          if (meetUrl === null) {
+            // unlock if cancelled
+            window.isProcessing = false;
+            return;
+          }
         }
 
-        // function to confirm a session
-        async function confirmSession(id, locationType) {
-            // check lock to prevent double clicks
-            if (window.isProcessing) return; 
-            
-            // set lock
-            window.isProcessing = true;
+        try {
+          await axios.post("/api/sessions/confirm", {
+            sessionId: id,
+            meetingUrl: meetUrl,
+          });
 
-            let meetUrl = null;
+          showToast("Session Confirmed!", "success");
+          fetchSessions();
+        } catch (err) {
+          const msg = err.response?.data?.message || "Error confirming session";
+          showToast(msg, "error");
+        } finally {
+          // release lock
+          window.isProcessing = false;
+        }
+      }
 
-            // handle url prompt for online sessions
-            if (locationType === 'Online') {
-                meetUrl = prompt("Please enter the Google Meet URL for this session:");
-                
-                if (meetUrl === null) {
-                    // unlock if cancelled
-                    window.isProcessing = false; 
-                    return; 
-                }
-            }
+      // function to deny or cancel a session
+      async function denySession(id) {
+        if (window.isProcessing) return;
+        window.isProcessing = true;
 
-            try {
-                await axios.post('/api/sessions/confirm', {
-                    sessionId: id,
-                    meetingUrl: meetUrl
-                });
-                
-                showToast("Session Confirmed!", "success");
-                fetchSessions(); 
-
-            } catch (err) { 
-                const msg = err.response?.data?.message || 'Error confirming session';
-                showToast(msg, "error"); 
-                
-            } finally {
-                // release lock
-                window.isProcessing = false;
-            }
+        if (!confirm("Are you sure you want to cancel/deny this session?")) {
+          window.isProcessing = false; // unlock
+          return;
         }
 
-        // function to deny or cancel a session
-        async function denySession(id) {
-            if (window.isProcessing) return;
-            window.isProcessing = true;
+        try {
+          await axios.post("/api/sessions/deny", {
+            sessionId: id,
+            reason: "User action",
+          });
 
-            if(!confirm("Are you sure you want to cancel/deny this session?")) {
-                window.isProcessing = false; // unlock
-                return;
-            }
+          showToast("Session cancelled successfully.", "success");
+          fetchSessions();
+        } catch (err) {
+          const msg = err.response?.data?.message || "Error processing request";
+          showToast(msg, "error");
+        } finally {
+          window.isProcessing = false;
+        }
+      }
 
-            try {
-                await axios.post('/api/sessions/deny', { sessionId: id, reason: 'User action' });
-                
-                showToast("Session cancelled successfully.", "success");
-                fetchSessions();
-            } catch (err) { 
-                const msg = err.response?.data?.message || 'Error processing request';
-                showToast(msg, "error");
-            } finally {
-                window.isProcessing = false;
-            }
+      // function to mark a session as complete
+      async function completeSession(id) {
+        if (window.isProcessing) return;
+        window.isProcessing = true;
+
+        if (!confirm("Mark this session as fully completed?")) {
+          window.isProcessing = false; // unlock
+          return;
         }
 
-        // function to mark a session as complete
-        async function completeSession(id) {
-            if (window.isProcessing) return;
-            window.isProcessing = true;
+        try {
+          await axios.post("/api/sessions/complete", { sessionId: id });
 
-            if(!confirm("Mark this session as fully completed?")) {
-                 window.isProcessing = false; // unlock
-                 return;
-            }
-            
-            try {
-                await axios.post('/api/sessions/complete', { sessionId: id });
-                
-                showToast("Session marked as complete!", "success");
-                fetchSessions();
-            } catch (err) { 
-                const msg = err.response?.data?.message || 'Error completing session';
-                showToast(msg, "error"); 
-            } finally {
-                window.isProcessing = false;
-            }
+          showToast("Session marked as complete!", "success");
+          fetchSessions();
+        } catch (err) {
+          const msg = err.response?.data?.message || "Error completing session";
+          showToast(msg, "error");
+        } finally {
+          window.isProcessing = false;
         }
+      }
     </script>
-</body>
+  </body>
 </html>
