@@ -98,20 +98,23 @@ button:active {
   transform: translateY(0);
 }
 
+/* Red Button -> Yellow Text on Hover (Instant, No Fade) */
 .button-blue,
 .btn-primary {
-  background: #ea5455; /* The specific Red/Coral from landing page */
-  color: white !important;
+  background: #ea5455; /* Coral Red Background */
+  color: white !important; /* White Text Default */
   border: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  text-decoration: none; /* vital since we are using <a> tags */
+  display: inline-block; /* ensures padding works on links */
 }
 
 .button-blue:hover,
 .btn-primary:hover {
-  transform: translateY(-2px);
+  background: #ea5455; /* Background stays Red */
+  color: #ffd460 !important; /* Text turns Sunny Yellow */
   box-shadow: 0 6px 12px rgba(234, 84, 85, 0.4);
-  background: #d63031; /* Slightly darker red for hover effect */
+  /* Note: No transition or transform property here */
 }
 
 /* Secondary button style */
