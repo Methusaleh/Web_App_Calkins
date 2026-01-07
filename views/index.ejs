@@ -46,108 +46,38 @@
         ></div>
       </div>
 
-      <h2>Quick Links</h2>
+     <h3>Swap Your Skills</h3>
+      <form id="sessionRequestForm">
+        <label for="skillTaughtId">I want to learn:</label>
+        <select id="skillTaughtId" required onchange="loadProviders()">
+          <option value="">-- Select a Topic --</option>
+          <% skills.forEach(skill => { %>
+          <option value="<%= skill.skill_id %>"><%= skill.skill_name %></option>
+          <% }) %>
+        </select>
 
-      <div
-        class="dashboard-actions"
-        style="display: flex; gap: 20px; flex-wrap: wrap"
-      >
-        <div
-          style="
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1;
-            min-width: 200px;
-            background: white;
-          "
-        >
-          <h3>👤 Your Profile</h3>
-          <p>Keep your skills and details up to date.</p>
-          <a
-            href="/profile/edit"
-            style="display: inline-block; margin-top: 10px; font-weight: bold"
-            >Edit Profile &rarr;</a
-          >
-          <br />
-          <a
-            href="/profile/view/<%= user.id %>"
-            style="
-              display: inline-block;
-              margin-top: 10px;
-              color: #555;
-              font-size: 0.9em;
-              text-decoration: none;
-            "
-          >
-            👁️ View Public Profile
-          </a>
-        </div>
+        <label for="providerId">Select a Tutor:</label>
+        <select id="providerId" required disabled>
+          <option value="">-- Please select a topic first --</option>
+        </select>
 
-        <div
-          style="
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1;
-            min-width: 200px;
-            background: white;
-          "
-        >
-          <h3>📅 Your Sessions</h3>
-          <p>View upcoming lessons or check requests.</p>
-          <a
-            href="/my_sessions"
-            style="display: inline-block; margin-top: 10px; font-weight: bold"
-            >Manage Sessions &rarr;</a
-          >
-        </div>
+        <label for="sessionDateTime">Proposed Date & Time:</label>
+        <input type="datetime-local" id="sessionDateTime" required />
+        <p style="font-size: 0.8em; color: #666">
+          * The tutor will confirm the exact time with you.
+        </p>
 
-        <div
-          style="
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1;
-            min-width: 200px;
-            background: white;
-          "
-        >
-          <h3>💬 My Messages</h3>
-          <p>Chat with your tutors and students.</p>
-          <a
-            href="/messages"
-            style="display: inline-block; margin-top: 10px; font-weight: bold"
-            >Open Inbox &rarr;</a
-          >
-        </div>
+        <label for="locationType">Preferred Location:</label>
+        <select id="locationType" required>
+          <option value="">-- Select --</option>
+          <option value="Online">Online (Virtual)</option>
+          <option value="In-Person">In-Person</option>
+        </select>
 
-        <% if (user.isAdmin) { %>
-        <div
-          style="
-            border: 1px solid #fca5a5;
-            background: #fef2f2;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1;
-            min-width: 200px;
-          "
-        >
-          <h3 style="color: #991b1b">🛡️ Admin Panel</h3>
-          <p>Manage users and security reports.</p>
-          <a
-            href="/admin"
-            style="
-              display: inline-block;
-              margin-top: 10px;
-              font-weight: bold;
-              color: #991b1b;
-            "
-            >Open Controls &rarr;</a
-          >
-        </div>
-        <% } %>
-      </div>
+        <button type="submit">Send Request</button>
+      </form>
+
+         
 
       <% if (typeof topTeachers !== 'undefined' && topTeachers.length > 0) { %>
       <div style="margin-top: 40px">
