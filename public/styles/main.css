@@ -39,7 +39,11 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.6;
-  background-image: url("background.png");
+  background-image: url("/background.png");
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 main {
@@ -47,6 +51,9 @@ main {
   margin: 0 auto;
   padding: 20px;
   margin-top: 20px;
+
+  width: 100%;
+  flex: 1;
 }
 
 h1,

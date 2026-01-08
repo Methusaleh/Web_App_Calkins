@@ -1,185 +1,320 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title><%= pageTitle %></title>
-    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/main.css" />
     <style>
-        .admin-section { margin-bottom: 40px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #eaeaea; }
-        .btn-small { padding: 4px 8px; font-size: 0.8em; cursor: pointer; border-radius: 4px; border: none; color: white; }
-        .btn-danger { background-color: #ef4444; }
-        .btn-success { background-color: #10b981; }
-        .btn-promote { background-color: #3b82f6; } /* Blue */
-        .btn-demote { background-color: #f59e0b; } /* Amber */
-body{
-     background-image: url("background_admin.png") !important; 
-     background-attachment: fixed !important;
-}
+      .admin-section {
+        margin-bottom: 40px;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+        background: white;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #eaeaea;
+      }
+      .btn-small {
+        padding: 4px 8px;
+        font-size: 0.8em;
+        cursor: pointer;
+        border-radius: 4px;
+        border: none;
+        color: white;
+      }
+      .btn-danger {
+        background-color: #ef4444;
+      }
+      .btn-success {
+        background-color: #10b981;
+      }
+      .btn-promote {
+        background-color: #3b82f6;
+      } /* Blue */
+      .btn-demote {
+        background-color: #f59e0b;
+      } /* Amber */
+      body {
+        background-image: url("/background_admin.png") !important;
+        background-attachment: fixed !important;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="toast-container"></div>
     <%- include('partials/navbar') %>
 
     <main>
-        <div style="margin-bottom: 20px;">
-            <a href="/" style="text-decoration: none; color: #333; font-weight: bold;">&larr; Back to Main Dashboard</a>
+      <div style="margin-bottom: 20px">
+        <a
+          href="/"
+          style="text-decoration: none; color: #333; font-weight: bold"
+          >&larr; Back to Main Dashboard</a
+        >
+      </div>
+
+      <h1>Admin Control Panel</h1>
+      <p>Monitor activity, manage users, and curate skills.</p>
+
+      <section
+        class="admin-section"
+        style="
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          margin-bottom: 20px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+          "
+        >
+          <h2 style="margin: 0">📊 System Activity Log</h2>
+          <button
+            onclick="fetchLogs()"
+            style="padding: 5px 10px; font-size: 0.9em; cursor: pointer"
+          >
+            Refresh Logs
+          </button>
         </div>
 
-        <h1>Admin Control Panel</h1>
-        <p>Monitor activity, manage users, and curate skills.</p>
-
-        <section class="admin-section" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="margin: 0;">📊 System Activity Log</h2>
-                <button onclick="fetchLogs()" style="padding: 5px 10px; font-size: 0.9em; cursor: pointer;">Refresh Logs</button>
-            </div>
-            
-            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #eee;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
-                    <thead style="background: #f8f9fa; position: sticky; top: 0;">
-                        <tr>
-                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Time</th>
-                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Admin User</th>
-                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Action</th>
-                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Target</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsBody">
-                        <tr><td colspan="4" style="padding: 20px; text-align: center;">Loading activity...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-        <div class="admin-section">
-            <h2>1. Pending Skill Suggestions</h2>
-            <p>Review skills suggested by users.</p>
-            <table id="suggestionsTable">
-                <thead>
-                    <tr>
-                        <th>Suggested Skill</th>
-                        <th>Suggested By</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="suggestionsBody"><tr><td colspan="4">Loading...</td></tr></tbody>
-            </table>
+        <div
+          style="max-height: 250px; overflow-y: auto; border: 1px solid #eee"
+        >
+          <table
+            style="width: 100%; border-collapse: collapse; font-size: 0.9em"
+          >
+            <thead style="background: #f8f9fa; position: sticky; top: 0">
+              <tr>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border-bottom: 2px solid #ddd;
+                  "
+                >
+                  Time
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border-bottom: 2px solid #ddd;
+                  "
+                >
+                  Admin User
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border-bottom: 2px solid #ddd;
+                  "
+                >
+                  Action
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border-bottom: 2px solid #ddd;
+                  "
+                >
+                  Target
+                </th>
+              </tr>
+            </thead>
+            <tbody id="logsBody">
+              <tr>
+                <td colspan="4" style="padding: 20px; text-align: center">
+                  Loading activity...
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </section>
+      <div class="admin-section">
+        <h2>1. Pending Skill Suggestions</h2>
+        <p>Review skills suggested by users.</p>
+        <table id="suggestionsTable">
+          <thead>
+            <tr>
+              <th>Suggested Skill</th>
+              <th>Suggested By</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="suggestionsBody">
+            <tr>
+              <td colspan="4">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <div class="admin-section">
-            <h2>2. Security Reports</h2>
-            <p>Monitor user reports and update their status.</p>
-            <table id="reportsTable">
-                <thead>
-                    <tr>
-                        <th>Reported User</th>
-                        <th>Reason</th>
-                        <th>Reporter</th>
-                        <th>Current Status</th>
-                        <th>Update Status</th>
-                    </tr>
-                </thead>
-                <tbody id="reportsBody"><tr><td colspan="5">Loading...</td></tr></tbody>
-            </table>
-        </div>
+      <div class="admin-section">
+        <h2>2. Security Reports</h2>
+        <p>Monitor user reports and update their status.</p>
+        <table id="reportsTable">
+          <thead>
+            <tr>
+              <th>Reported User</th>
+              <th>Reason</th>
+              <th>Reporter</th>
+              <th>Current Status</th>
+              <th>Update Status</th>
+            </tr>
+          </thead>
+          <tbody id="reportsBody">
+            <tr>
+              <td colspan="5">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <div class="admin-section">
-            <h2>3. User Database</h2>
-            <p>View all registered users and remove accounts if necessary.</p>
-            <table id="usersTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Grade</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersBody"><tr><td colspan="5">Loading...</td></tr></tbody>
-            </table>
-        </div>
-        
-        <div class="admin-section">
-            <h2>4. Add Master Skill Manually</h2>
-            <form id="addSkillForm" style="display:flex; gap:10px;">
-                <input type="text" id="newMasterSkill" placeholder="New Skill Name" required style="flex-grow:1; margin-bottom: 0;">
-                <button type="submit">Add Skill</button>
-            </form>
-        </div>
+      <div class="admin-section">
+        <h2>3. User Database</h2>
+        <p>View all registered users and remove accounts if necessary.</p>
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Grade</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr>
+              <td colspan="5">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
+      <div class="admin-section">
+        <h2>4. Add Master Skill Manually</h2>
+        <form id="addSkillForm" style="display: flex; gap: 10px">
+          <input
+            type="text"
+            id="newMasterSkill"
+            placeholder="New Skill Name"
+            required
+            style="flex-grow: 1; margin-bottom: 0"
+          />
+          <button type="submit">Add Skill</button>
+        </form>
+      </div>
     </main>
     <%- include('partials/footer') %>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // helper function to show toast notifications
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+      // helper function to show toast notifications
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add("show"));
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
 
-        // load all data tables when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchSuggestions();
-            fetchReports();
-            fetchUsers();
-            fetchLogs();
-        });
+      // load all data tables when the page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchSuggestions();
+        fetchReports();
+        fetchUsers();
+        fetchLogs();
+      });
 
-        // fetches pending skill suggestions from the api
-        async function fetchSuggestions() {
-            const tbody = document.getElementById('suggestionsBody');
-            try {
-                const res = await axios.get('/api/admin/suggestions');
-                const data = res.data.suggestions;
-                tbody.innerHTML = '';
-                if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No pending suggestions.</td></tr>'; return; }
-                data.forEach(item => {
-                    const row = `<tr>
+      // fetches pending skill suggestions from the api
+      async function fetchSuggestions() {
+        const tbody = document.getElementById("suggestionsBody");
+        try {
+          const res = await axios.get("/api/admin/suggestions");
+          const data = res.data.suggestions;
+          tbody.innerHTML = "";
+          if (data.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="4">No pending suggestions.</td></tr>';
+            return;
+          }
+          data.forEach((item) => {
+            const row = `<tr>
                         <td>${item.suggested_skill_name}</td>
-                        <td>${item.suggesting_user || 'Unknown'}</td>
-                        <td>${new Date(item.timestamp).toLocaleDateString()}</td>
+                        <td>${item.suggesting_user || "Unknown"}</td>
+                        <td>${new Date(
+                          item.timestamp
+                        ).toLocaleDateString()}</td>
                         <td>
-                            <button class="btn-small btn-success" onclick="processSuggestion(${item.suggestion_id}, 'approve')">Approve</button>
-                            <button class="btn-small btn-danger" onclick="processSuggestion(${item.suggestion_id}, 'reject')">Reject</button>
+                            <button class="btn-small btn-success" onclick="processSuggestion(${
+                              item.suggestion_id
+                            }, 'approve')">Approve</button>
+                            <button class="btn-small btn-danger" onclick="processSuggestion(${
+                              item.suggestion_id
+                            }, 'reject')">Reject</button>
                         </td>
                     </tr>`;
-                    tbody.innerHTML += row;
-                });
-            } catch (err) { tbody.innerHTML = '<tr><td colspan="4">Error loading data.</td></tr>'; }
+            tbody.innerHTML += row;
+          });
+        } catch (err) {
+          tbody.innerHTML = '<tr><td colspan="4">Error loading data.</td></tr>';
         }
+      }
 
-        // sends approval or rejection for a skill suggestion
-        async function processSuggestion(id, action) {
-            try {
-                await axios.post('/api/admin/suggestions/action', { suggestionId: id, action: action });
-                showToast("Suggestion processed.", "success");
-                fetchSuggestions();
-            } catch (err) { showToast('Error processing suggestion.', "error"); }
+      // sends approval or rejection for a skill suggestion
+      async function processSuggestion(id, action) {
+        try {
+          await axios.post("/api/admin/suggestions/action", {
+            suggestionId: id,
+            action: action,
+          });
+          showToast("Suggestion processed.", "success");
+          fetchSuggestions();
+        } catch (err) {
+          showToast("Error processing suggestion.", "error");
         }
+      }
 
-        // fetches all security reports from the api
-        async function fetchReports() {
-            const tbody = document.getElementById('reportsBody');
-            try {
-                const res = await axios.get('/api/admin/reports');
-                const data = res.data.reports;
-                tbody.innerHTML = '';
-                if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="5">No active reports.</td></tr>'; return; }
-                data.forEach(item => {
-                    const row = `<tr>
+      // fetches all security reports from the api
+      async function fetchReports() {
+        const tbody = document.getElementById("reportsBody");
+        try {
+          const res = await axios.get("/api/admin/reports");
+          const data = res.data.reports;
+          tbody.innerHTML = "";
+          if (data.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="5">No active reports.</td></tr>';
+            return;
+          }
+          data.forEach((item) => {
+            const row = `<tr>
                         <td><strong>${item.reported_user_name}</strong> (ID: ${item.reported_user_id})</td>
                         <td>${item.report_reason}</td>
                         <td>${item.reporter_name}</td>
@@ -193,109 +328,138 @@ body{
                             </select>
                         </td>
                     </tr>`;
-                    tbody.innerHTML += row;
-                });
-            } catch (err) { tbody.innerHTML = '<tr><td colspan="5">Error loading reports.</td></tr>'; }
+            tbody.innerHTML += row;
+          });
+        } catch (err) {
+          tbody.innerHTML =
+            '<tr><td colspan="5">Error loading reports.</td></tr>';
         }
+      }
 
-        // updates the status of a specific security report
-        async function updateReportStatus(id, newStatus) {
-            if(!newStatus) return;
-            try {
-                await axios.post(`/api/admin/report/${id}/status`, { newStatus: newStatus });
-                showToast("Report status updated.", "success");
-                fetchReports();
-            } catch (err) { showToast('Error updating status.', "error"); }
+      // updates the status of a specific security report
+      async function updateReportStatus(id, newStatus) {
+        if (!newStatus) return;
+        try {
+          await axios.post(`/api/admin/report/${id}/status`, {
+            newStatus: newStatus,
+          });
+          showToast("Report status updated.", "success");
+          fetchReports();
+        } catch (err) {
+          showToast("Error updating status.", "error");
         }
+      }
 
-        // fetches the list of all users from the api
-        async function fetchUsers() {
-            const tbody = document.getElementById('usersBody');
-            try {
-                const res = await axios.get('/api/admin/users');
-                const data = res.data.users;
-                tbody.innerHTML = '';
-                data.forEach(u => {
-                    let actions = '';
-                    const isRootAdmin = (u.user_id === 1);
-                    const isMe = (u.user_id == '<%= user.id %>');
+      // fetches the list of all users from the api
+      async function fetchUsers() {
+        const tbody = document.getElementById("usersBody");
+        try {
+          const res = await axios.get("/api/admin/users");
+          const data = res.data.users;
+          tbody.innerHTML = "";
+          data.forEach((u) => {
+            let actions = "";
+            const isRootAdmin = u.user_id === 1;
+            const isMe = u.user_id == "<%= user.id %>";
 
-                    // visual protection for root admin and current user
-                    if (isRootAdmin) {
-                        actions = '<span style="color:#d97706; font-weight:bold; border:1px solid #d97706; padding:2px 6px; border-radius:4px;">ROOT ADMIN</span>';
-                    } else if (isMe) {
-                        actions = '<span style="color:#888; font-style:italic;">Current User</span>';
-                    } else {
-                        const roleBtn = u.is_admin 
-                            ? `<button class="btn-small btn-demote" style="margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Demote</button>`
-                            : `<button class="btn-small btn-promote" style="margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Make Admin</button>`;
-                        const deleteBtn = `<button class="btn-small btn-danger" onclick="deleteUser(${u.user_id})">Delete</button>`;
-                        actions = `${roleBtn} ${deleteBtn}`;
-                    }
+            // visual protection for root admin and current user
+            if (isRootAdmin) {
+              actions =
+                '<span style="color:#d97706; font-weight:bold; border:1px solid #d97706; padding:2px 6px; border-radius:4px;">ROOT ADMIN</span>';
+            } else if (isMe) {
+              actions =
+                '<span style="color:#888; font-style:italic;">Current User</span>';
+            } else {
+              const roleBtn = u.is_admin
+                ? `<button class="btn-small btn-demote" style="margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Demote</button>`
+                : `<button class="btn-small btn-promote" style="margin-right:5px;" onclick="toggleAdmin(${u.user_id})">Make Admin</button>`;
+              const deleteBtn = `<button class="btn-small btn-danger" onclick="deleteUser(${u.user_id})">Delete</button>`;
+              actions = `${roleBtn} ${deleteBtn}`;
+            }
 
-                    const row = `<tr>
+            const row = `<tr>
                         <td>${u.user_id}</td>
-                        <td>${u.user_name} ${u.is_admin ? '<strong>(Admin)</strong>' : ''}</td>
+                        <td>${u.user_name} ${
+              u.is_admin ? "<strong>(Admin)</strong>" : ""
+            }</td>
                         <td>${u.email}</td>
-                        <td>${u.grade_level || '-'}</td>
+                        <td>${u.grade_level || "-"}</td>
                         <td>${actions}</td>
                     </tr>`;
-                    tbody.innerHTML += row;
-                });
-            } catch (err) { tbody.innerHTML = '<tr><td colspan="5">Error loading users.</td></tr>'; }
+            tbody.innerHTML += row;
+          });
+        } catch (err) {
+          tbody.innerHTML =
+            '<tr><td colspan="5">Error loading users.</td></tr>';
         }
+      }
 
-        // promotes or demotes a user's admin status
-        async function toggleAdmin(id) {
-            if(!confirm(`Change Admin status for User ID ${id}?`)) return;
-            try {
-                const res = await axios.post(`/api/admin/users/${id}/toggle_role`);
-                showToast(res.data.message, "success");
-                fetchUsers();
-            } catch (err) { showToast(err.response?.data?.message || 'Error updating role.', "error"); }
+      // promotes or demotes a user's admin status
+      async function toggleAdmin(id) {
+        if (!confirm(`Change Admin status for User ID ${id}?`)) return;
+        try {
+          const res = await axios.post(`/api/admin/users/${id}/toggle_role`);
+          showToast(res.data.message, "success");
+          fetchUsers();
+        } catch (err) {
+          showToast(
+            err.response?.data?.message || "Error updating role.",
+            "error"
+          );
         }
+      }
 
-        // permanently deletes a user account
-        async function deleteUser(id) {
-            if(!confirm(`Permanently DELETE User ID ${id}? This cannot be undone.`)) return;
-            try {
-                await axios.delete(`/api/admin/users/${id}`);
-                showToast("User deleted successfully.", "success");
-                fetchUsers();
-            } catch (err) { showToast('Error deleting user.', "error"); }
+      // permanently deletes a user account
+      async function deleteUser(id) {
+        if (
+          !confirm(`Permanently DELETE User ID ${id}? This cannot be undone.`)
+        )
+          return;
+        try {
+          await axios.delete(`/api/admin/users/${id}`);
+          showToast("User deleted successfully.", "success");
+          fetchUsers();
+        } catch (err) {
+          showToast("Error deleting user.", "error");
         }
+      }
 
-        // handles manual skill addition by the admin
-        document.getElementById('addSkillForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('newMasterSkill').value;
-            try {
-                await axios.post('/api/skills', { skillName: name });
-                showToast('Skill added to master list!', "success");
-                document.getElementById('newMasterSkill').value = '';
-            } catch (err) { showToast('Error adding skill (it may already exist).', "error"); }
+      // handles manual skill addition by the admin
+      document
+        .getElementById("addSkillForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("newMasterSkill").value;
+          try {
+            await axios.post("/api/skills", { skillName: name });
+            showToast("Skill added to master list!", "success");
+            document.getElementById("newMasterSkill").value = "";
+          } catch (err) {
+            showToast("Error adding skill (it may already exist).", "error");
+          }
         });
 
-        // function to fetch and display audit logs
-        async function fetchLogs() {
-            const tbody = document.getElementById('logsBody');
-            
-            try {
-                const res = await axios.get('/api/admin/logs');
-                const logs = res.data.logs;
+      // function to fetch and display audit logs
+      async function fetchLogs() {
+        const tbody = document.getElementById("logsBody");
 
-                if (logs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center;">No activity recorded yet.</td></tr>';
-                    return;
-                }
+        try {
+          const res = await axios.get("/api/admin/logs");
+          const logs = res.data.logs;
 
-                tbody.innerHTML = ''; // clear loading message
+          if (logs.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="4" style="padding: 20px; text-align: center;">No activity recorded yet.</td></tr>';
+            return;
+          }
 
-                logs.forEach(log => {
-                    // format date (e.g., "12/9/2025, 1:53 PM")
-                    const dateStr = new Date(log.timestamp).toLocaleString();
-                    
-                    const row = `
+          tbody.innerHTML = ""; // clear loading message
+
+          logs.forEach((log) => {
+            // format date (e.g., "12/9/2025, 1:53 PM")
+            const dateStr = new Date(log.timestamp).toLocaleString();
+
+            const row = `
                         <tr style="border-bottom: 1px solid #eee;">
                             <td style="padding: 8px; color: #666;">${dateStr}</td>
                             <td style="padding: 8px; font-weight: bold;">${log.user_name}</td>
@@ -307,14 +471,14 @@ body{
                             <td style="padding: 8px; color: #555;">${log.target_table}</td>
                         </tr>
                     `;
-                    tbody.innerHTML += row;
-                });
-
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: red;">Error loading logs.</td></tr>';
-            }
+            tbody.innerHTML += row;
+          });
+        } catch (err) {
+          console.error(err);
+          tbody.innerHTML =
+            '<tr><td colspan="4" style="padding: 20px; text-align: center; color: red;">Error loading logs.</td></tr>';
         }
+      }
     </script>
-</body>
+  </body>
 </html>
