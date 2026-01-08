@@ -1988,10 +1988,11 @@ seedDatabase();
 
       <h1
         style="
-          background: linear-gradient(135deg, #ffd460, #927218);
+          background: linear-gradient(135deg, #2d4059, #1f2d3f);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          filter: drop-shadow(0 1px 0px rgba(255, 255, 255, 0.4));
         "
       >
         Admin Control Panel
@@ -3783,9 +3784,9 @@ seedDatabase();
    ========================================================================== */
 
 <nav class="navbar" style="position: relative; z-index: 1000">
- <a href="/" class="nav-brand">
-  <img
-      src="docs/S_Arrows_Yellow_transparent.png"
+  <a href="/" class="nav-brand">
+    <img
+      src="/public/images/S_Arrows_Yellow_transparent.png"
       alt="SkillSwap logo"
       style="margin-right: 8px"
       width="24"
