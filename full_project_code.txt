@@ -1969,7 +1969,7 @@ seedDatabase();
         background-image: url("/images/background_admin.png") !important;
         background-attachment: fixed !important;
         background-repeat: repeat !important;
-        background-size: 100px auto !important;
+        background-size: 1020px auto !important;
       }
     </style>
   </head>
@@ -1986,7 +1986,16 @@ seedDatabase();
         >
       </div>
 
-      <h1>Admin Control Panel</h1>
+      <h1
+        style="
+          background: linear-gradient(135deg, #ffd460, #927218);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        "
+      >
+        Admin Control Panel
+      </h1>
       <p>Monitor activity, manage users, and curate skills.</p>
 
       <section
