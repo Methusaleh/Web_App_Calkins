@@ -314,12 +314,12 @@ label {
   padding: 10px;
   border-radius: 8px;
   transition: all 0.2s;
+  border: 2px solid transparent;
 }
 
 .radio-option:hover {
   background-color: #fffbf5;
-  border: 2px solid var(--highlight-color);
-  margin-left: -2px;
+  border-color: var(--highlight-color);
 }
 
 .radio-option input[type="radio"] {
