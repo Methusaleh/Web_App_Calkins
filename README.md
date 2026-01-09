@@ -1,5 +1,7 @@
 # SkillSwap: Student Talent Exchange Platform
 
+> **View the Live Site:** [Click Here to Open App](https://web-app-calkins-469564564131.us-central1.run.app/)
+
 ## What is this?
 SkillSwap is a web application designed to help students teach each other. It allows users to create a profile, list the skills they can teach (like math or guitar), and find other students who can teach them the things they want to learn. It connects students for either online or in-person learning sessions.
 
@@ -24,38 +26,73 @@ We built this project using standard web technologies:
 * CSS: We wrote our own styles to make the site look clean and modern.
 * Axios: This helps our web pages talk to our server without reloading the page every time you click a button.
 
-## How to run this project
+## Installation & Setup (For New Users) 
 
-If you want to run this code on your own computer, follow these steps:
+Since this project uses a live database, you need to set up your local environment before running the app. **Note: The `node_modules` folder has been excluded to keep the submission file size small.**
 
-1. Get the code
-Download this folder or clone the repository to your computer.
+### 1. Prerequisites
+* **Node.js**: Installed on your machine.
+* **PostgreSQL**: Installed and running on your machine.
 
-2. Install the tools
-Open your terminal (command line) in this folder and run this command to download the necessary libraries:
-npm install
+### 2. Database Setup
+1.  Open your terminal or **pgAdmin**.
+2.  Create a new, empty database named `skillswap`.
+    * *Command Line:* `createdb skillswap`
+    * *pgAdmin:* Right Click Databases > Create > Database...
 
-3. Set up your secrets
-Create a new file in this folder called .env. You need to put your database connection info here so the app knows where to save data. It should look like this:
+### 3. Environment Config (.env)
+1.  Create a file in the root folder named `.env`.
+2.  Paste the following variables inside, replacing the values with your local Postgres credentials:
 
-DATABASE_URL=your_postgres_connection_string_here
-SESSION_SECRET=your_long_random_security_key_here
+```env
+# Database Connection
+DATABASE_URL=postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/skillswap
+
+# Session Security Key (Can be any random string)
+SESSION_SECRET=super_secret_bpa_key_2026
+
+# Admin Password (Used for generating the hash in hash_admin.js)
+ADMIN_PASSWORD=your_actual_secure_password
+
+# Port (Optional, defaults to 8080)
 PORT=8080
+```
 
-4. Start the server
+### 4. Install Dependencies
+Open a terminal in the project folder and run:
+```bash
+npm install
+```
+
+### 5. Seed the Database (Important!)
+To instantly populate the app with 20+ fake users, skills, and session history for testing, run:
+```bash
+node seed.js
+```
+
+### 6. Start the Server
 Run this command to start the application:
-npm start
+```bash
+node index.js
+```
 
-Then, open your web browser and go to http://localhost:8080.
+Then, open your web browser and go to `http://localhost:8080`.
 
-## Database Setup
-You do not need to create tables manually. The application automatically checks the database when it starts. If the tables are missing, it will run the necessary SQL code to create them for you.
+---
+
+## Default Login Credentials
+If you ran the seed script, you can log in with:
+* **Email:** `admin@example.com`
+* **Password:** `password123`
 
 ## Credits
-Business Professionals of America (BPA) - Web Application Team (V04)
-* School: Francis Tuttle Institute of Technology
-* Chapter: Reno Chapter
-* Year: 2026
+**Business Professionals of America (BPA) - Web Application Team (2026)**
+* **School:** Francis Tuttle Institute of Technology (Reno Chapter)
+* **Team Members:**
+    * Aaron Kipf
+    * Austin Coco
+    * Michael Crawford
+    * Zach All
 
 ## System Architecture
 ![System Architecture Diagram](./docs/SAD.png)
