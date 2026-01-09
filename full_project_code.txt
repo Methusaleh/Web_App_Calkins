@@ -1853,7 +1853,7 @@ seedDatabase();
     <main>
       <div style="text-align: center; margin-bottom: 40px">
         <h1 style="font-size: 2.5em; margin-bottom: 10px">About SkillSwap</h1>
-        <p style="color: #666; font-size: 1.2em">
+        <p style="color: black; font-size: 1.2em">
           Connecting students who want to learn together.
         </p>
       </div>
@@ -2706,7 +2706,7 @@ seedDatabase();
 
     <main style="flex: 1; padding: 40px 20px; max-width: 600px; margin: 0 auto; text-align: center;">
         
-        <h1 style="color: #1f2937; margin-bottom: 10px;">Check your Email</h1>
+        <h1 style="color: #1f2937; margin-bottom: 10px;">Check your email!</h1>
         <p style="color: #6b7280; font-size: 1.1em; margin-bottom: 40px;">
             If an account exists for <strong><%= email %></strong>, we have sent a reset link.
         </p>
@@ -2751,6 +2751,7 @@ seedDatabase();
     <%- include('partials/footer') %>
 </body>
 </html>
+
 
 /* ==========================================================================
    FILE: views\inbox.ejs
@@ -2943,6 +2944,7 @@ seedDatabase();
             padding: 12px 25px;
             white-space: nowrap;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
           "
         >
           📅 Schedule Session &rarr;
@@ -3312,6 +3314,13 @@ seedDatabase();
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
     
     <nav class="navbar">
+        <img
+        src="/images/S_Arrows_Yellow_transparent.png"
+        alt="SkillSwap logo"
+        style="margin-right: 8px"
+        width="40"
+        height="40"
+        />
         <div class="brand" font-size: 0.9rem; >
             SkillSwap
         </div>
@@ -3419,17 +3428,11 @@ seedDatabase();
           margin-bottom: 20px;
         "
       >
-        <h1 style="margin: 0">My Sessions</h1>
+        <h1 style="margin: 0; flex-grow: 1">My Sessions</h1>
         <a
           href="/session/request"
-          style="
-            background: #ea5455cc;
-            color: white;
-            padding: 10px 15px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-          "
+          class="btn-primary"
+          style="padding: 10px 15px; border-radius: 5px; font-weight: bold"
         >
           + New Request
         </a>
@@ -3506,7 +3509,7 @@ seedDatabase();
                         <div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
                             <h3>You haven't scheduled any sessions yet!</h3>
                             <p style="color: #666; margin-bottom: 20px;">Find a tutor or offer your skills to get started.</p>
-                            <a href="/session/request" style="background: #ea5455cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Find a Tutor</a>
+                            <a href="/session/request" class="btn-primary" style="padding: 10px 20px; border-radius: 5px;">Find a Tutor</a>
                             <span style="margin: 0 10px;">or</span>
                             <a href="/profile/edit" style="color: #ea5455cc;">Update Profile</a>
                         </div>
@@ -3786,11 +3789,11 @@ seedDatabase();
 <nav class="navbar" style="position: relative; z-index: 1000">
   <a href="/" class="nav-brand">
     <img
-      src="/public/images/S_Arrows_Yellow_transparent.png"
+      src="/images/S_Arrows_Yellow_transparent.png"
       alt="SkillSwap logo"
       style="margin-right: 8px"
-      width="24"
-      height="24"
+      width="40"
+      height="40"
     />
     SkillSwap
   </a>
@@ -4454,8 +4457,7 @@ seedDatabase();
 
         <p>
           <strong>Grade:</strong> <%= profile.grade_level || 'Not specified' %>
-          | <strong>School:</strong> <%= profile.school_college || 'Not
-          specified' %>
+          | <strong>School:</strong> <%= profile.school_college || 'Not specified' %>
         </p>
 
         <% if (String(user.id) === String(profile.user_id)) { %>
@@ -4825,7 +4827,6 @@ seedDatabase();
 
     <main>
         <h1>Create Your SkillSwap Account</h1>
-        <p>All fields marked with an asterisk (*) are required.</p>
 
         <form id="registerForm">
             <label for="email">Email *</label>
@@ -4848,11 +4849,15 @@ seedDatabase();
                 <option value="">-- Select --</option>
                 <option value="6th">6th Grade</option>
                 <option value="7th">7th Grade</option>
+                <option value="8th">8th Grade</option>
+                <option value="9th">9th Grade</option>
+                <option value="10th">10th Grade</option>
+                <option value="11th">11th Grade</option>
                 <option value="12th">12th Grade</option>
                 <option value="College">College</option>
             </select>
 
-            <label for="schoolCollege">School/College (Optional)</label>
+            <label for="schoolCollege">School/College</label>
             <input type="text" id="regSchoolCollege">
 
             <label for="avatarStyle">Choose Avatar Style:</label>
@@ -4863,6 +4868,7 @@ seedDatabase();
                 <option value="initials">🔠 Initials</option>
                 <option value="micah">🎨 Hand Drawn</option>
             </select>
+            <p style="text-color: black; font-weight: bold;">* = Required field</p>
 
             <button type="submit">Register Account</button>
         </form>
@@ -4956,6 +4962,7 @@ seedDatabase();
     </script>
 </body>
 </html>
+
 
 /* ==========================================================================
    FILE: views\reset_password.ejs
