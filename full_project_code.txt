@@ -5,9 +5,17 @@
    ========================================================================== */
 
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 
-const ADMIN_PASSWORD = "Amacmoneyman49!"; 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD; 
+
+if (!ADMIN_PASSWORD) {
+    console.error("Error: ADMIN_PASSWORD is missing from .env file.");
+    process.exit(1);
+}
 
 const saltRounds = 10;
 
@@ -41,6 +49,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import "dotenv/config";
 
 // setup for the express app and database connection
 const app = express();
@@ -1506,12 +1515,12 @@ label {
   padding: 10px;
   border-radius: 8px;
   transition: all 0.2s;
+  border: 2px solid transparent;
 }
 
 .radio-option:hover {
   background-color: #fffbf5;
-  border: 2px solid var(--highlight-color);
-  margin-left: -2px;
+  border-color: var(--highlight-color);
 }
 
 .radio-option input[type="radio"] {
@@ -3314,16 +3323,17 @@ seedDatabase();
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
     
     <nav class="navbar">
-        <img
-        src="/images/S_Arrows_Yellow_transparent.png"
-        alt="SkillSwap logo"
-        style="margin-right: 8px"
-        width="40"
-        height="40"
-        />
-        <div class="brand" font-size: 0.9rem; >
+        <div class="brand">
+            <img
+            src="/images/S_Arrows_Yellow_transparent.png"
+            alt="SkillSwap logo"
+            style="margin-right: 8px"
+            width="40"
+            height="40"
+            />
             SkillSwap
         </div>
+
         <div class="nav-actions">
             <a href="/dashboard" class="cta-primary">Log In</a>
         </div>
@@ -3623,7 +3633,7 @@ seedDatabase();
         // handle url prompt for online sessions
         if (locationType === "Online") {
           meetUrl = prompt(
-            "Please enter the Google Meet URL for this session:"
+            "Please enter the Video Call Link (e.g., Zoom, Google Meet) for this session:"
           );
 
           if (meetUrl === null) {
@@ -4789,7 +4799,7 @@ seedDatabase();
               feedbackText: feedbackText,
             });
 
-            showToast("Rating submitted! Redirecting...", "success");
+            showToast("Rating submitted!", "success");
 
             // redirects the user back to their sessions list
             setTimeout(() => {
