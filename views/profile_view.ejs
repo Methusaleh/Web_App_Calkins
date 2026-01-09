@@ -93,8 +93,7 @@
 
         <p>
           <strong>Grade:</strong> <%= profile.grade_level || 'Not specified' %>
-          | <strong>School:</strong> <%= profile.school_college || 'Not
-          specified' %>
+          | <strong>School:</strong> <%= profile.school_college || 'Not specified' %>
         </p>
 
         <% if (String(user.id) === String(profile.user_id)) { %>
