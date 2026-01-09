@@ -9,6 +9,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import "dotenv/config";
 
 // setup for the express app and database connection
 const app = express();
