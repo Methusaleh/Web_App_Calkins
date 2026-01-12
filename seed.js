@@ -1,28 +1,22 @@
-/* ==========================================================================
-   FILE: seed.js
-   Usage: node seed.js
-   Description: Populates the DB with 20 users, skills, sessions, and ratings.
-   ========================================================================== */
-
 import pg from "pg";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 
-// Load environment variables (to get DATABASE_URL)
+// load env vars
 dotenv.config();
 
 const { Pool } = pg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // If you are using a cloud DB that requires SSL, uncomment the next line:
+  // enable ssl for cloud db if needed
   // ssl: { rejectUnauthorized: false }
 });
 
-// --- CONFIGURATION ---
+// config
 const USERS_TO_CREATE = 19;
-const DEFAULT_PASSWORD = "password123"; // Simple password for all fake users
+const DEFAULT_PASSWORD = "password123"; 
 
-// --- DATA ARRAYS ---
+// sample data
 const FIRST_NAMES = [
   "James",
   "Mary",
@@ -113,7 +107,7 @@ const FEEDBACK_COMMENTS = [
 
 const AVATAR_STYLES = ["bottts", "avataaars", "micah", "identicon"];
 
-// --- HELPER FUNCTIONS ---
+// helpers
 function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -124,12 +118,12 @@ function getRandomDate(start, end) {
   );
 }
 
-// --- MAIN FUNCTION ---
+// main seed function
 async function seedDatabase() {
   console.log("🌱 Starting Database Seed...");
 
   try {
-    // 1. Ensure Skills Exist
+    // insert master skills
     console.log("📚 Seeding Master Skills...");
     for (const skill of SKILL_LIST) {
       await pool.query(
@@ -138,11 +132,11 @@ async function seedDatabase() {
       );
     }
 
-    // Get all skill IDs for later assignment
+    // fetch skill ids
     const skillsRes = await pool.query("SELECT * FROM Skills");
     const allSkills = skillsRes.rows;
 
-    // 2. Create Users
+    // create users
     console.log(`👤 Creating ${USERS_TO_CREATE} Fake Users...`);
     const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 10);
     const createdUsers = [];
@@ -154,7 +148,7 @@ async function seedDatabase() {
         Math.random() * 1000
       )}@example.com`;
 
-      // Randomly assign school and grade
+      // random school/grade
       const school = Math.random() > 0.3 ? getRandom(SCHOOLS) : null;
       const grade = Math.random() > 0.5 ? "12th" : "College";
 
@@ -189,16 +183,16 @@ async function seedDatabase() {
       createdUsers.push(...existing.rows);
     }
 
-    // 3. Assign Skills (Offer & Seek)
+    // assign user skills
     console.log("🎓 Assigning Skills...");
     for (const user of createdUsers) {
-      // Assign 1-3 Offered Skills
+      // assign offered skills
       const numOffers = Math.floor(Math.random() * 3) + 1;
       for (let j = 0; j < numOffers; j++) {
         const skill = getRandom(allSkills);
         await pool.query(
           `INSERT INTO User_Skills_Offered (user_id, skill_id, is_virtual_only, is_inperson_only) 
-                     VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+                      VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
           [
             user.user_id,
             skill.skill_id,
@@ -208,14 +202,14 @@ async function seedDatabase() {
         );
       }
 
-      // Assign 1-3 Sought Skills
+      // assign sought skills
       const numSeeks = Math.floor(Math.random() * 3) + 1;
       for (let k = 0; k < numSeeks; k++) {
         const skill = getRandom(allSkills);
-        // Don't seek what you offer (mostly)
+        
         await pool.query(
           `INSERT INTO User_Skills_Sought (user_id, skill_id, is_virtual_only, is_inperson_only) 
-                     VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+                      VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
           [
             user.user_id,
             skill.skill_id,
@@ -226,23 +220,22 @@ async function seedDatabase() {
       }
     }
 
-    // 4. Create History (Sessions & Ratings)
+    // generate session history
     console.log("⭐ Generating Session History & Ratings...");
 
-    // We will create ~15 random completed sessions
     for (let i = 0; i < 15; i++) {
       const provider = getRandom(createdUsers);
       let requester = getRandom(createdUsers);
 
-      // Ensure provider != requester
+      // ensure provider isn't requester
       while (requester.user_id === provider.user_id) {
         requester = getRandom(createdUsers);
       }
 
-      const skill = getRandom(allSkills); // Ideally check if provider actually offers this, but for seed it's okay
+      const skill = getRandom(allSkills); 
       const sessionDate = getRandomDate(new Date(2025, 0, 1), new Date());
 
-      // Create Session
+      // create session
       const sessRes = await pool.query(
         `INSERT INTO Sessions (provider_id, requester_id, skill_taught_id, session_date_time, location_type, status)
                  VALUES ($1, $2, $3, $4, 'Online', 'Completed') RETURNING session_id`,
@@ -251,7 +244,7 @@ async function seedDatabase() {
 
       const sessionId = sessRes.rows[0].session_id;
 
-      // Add Rating (80% chance of "Like")
+      // add rating
       const liked = Math.random() > 0.2;
       const comment = liked
         ? getRandom(FEEDBACK_COMMENTS)
