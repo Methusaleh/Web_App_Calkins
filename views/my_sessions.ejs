@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
-      /* styles for the dashboard table */
+      /* table styles */
       table {
         width: 100%;
         border-collapse: collapse;
@@ -21,24 +21,24 @@
         background-color: #f4f4f4;
       }
 
-      /* status color coding */
+      /* status colors */
       .status-requested {
         color: #d97706;
         font-weight: bold;
-      } /* amber */
+      }
       .status-confirmed {
         color: #059669;
         font-weight: bold;
-      } /* green */
+      }
       .status-denied,
       .status-cancelled {
         color: #dc2626;
-      } /* red */
+      }
       .status-completed {
         color: #2563eb;
-      } /* blue */
+      }
 
-      /* action buttons styling */
+      /* button styles */
       .btn-action {
         padding: 5px 10px;
         font-size: 0.9em;
@@ -104,27 +104,23 @@
     <%- include('partials/footer') %>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      // global flag to prevent multiple clicks
+      // prevent double clicks
       window.isProcessing = false;
 
-      // helper function to show toast notifications
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
 
-        // create the toast element
         const toast = document.createElement("div");
         toast.className = `toast toast-${type}`;
         toast.textContent = message;
 
-        // add to dom
         container.appendChild(toast);
 
-        // trigger animation
         requestAnimationFrame(() => {
           toast.classList.add("show");
         });
 
-        // remove after 3 seconds
         setTimeout(() => {
           toast.classList.remove("show");
           setTimeout(() => {
@@ -133,15 +129,15 @@
         }, 3000);
       }
 
-      // current user id from server session
+      // get current user id
       const currentUserId = "<%= user.id %>";
 
-      // fetch sessions when the page loads
+      // load sessions on start
       document.addEventListener("DOMContentLoaded", fetchSessions);
 
       async function fetchSessions() {
         try {
-          // calls the backend api to get the user's session history
+          // fetch session history
           const response = await axios.get(
             `/api/sessions/user/${currentUserId}`
           );
@@ -150,7 +146,7 @@
           const tbody = document.getElementById("sessionsBody");
           tbody.innerHTML = "";
 
-          // display empty state if no sessions exist
+          // handle empty state
           if (sessions.length === 0) {
             document.getElementById("loadingMsg").innerHTML = `
                         <div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
@@ -164,12 +160,11 @@
             return;
           }
 
-          // loop through each session to create table rows
+          // create table rows
           sessions.forEach((session) => {
             const row = document.createElement("tr");
 
-            // determines if the current user is the teacher or student
-            // converts ids to strings to avoid type mismatches
+            // check user role
             const isTeacher =
               String(currentUserId) === String(session.provider_id);
             const myRole = isTeacher ? "Teacher" : "Student";
@@ -180,26 +175,26 @@
               ? session.requester_id
               : session.provider_id;
 
-            // formats the date for display
+            // format date
             const dateObj = new Date(session.session_date_time);
             const dateStr = dateObj.toLocaleString();
 
             let actionsHtml = "";
 
-            // logic for displaying buttons based on session status
+            // generate action buttons based on status
             if (session.status === "Requested") {
               if (isTeacher) {
-                // teacher can confirm or deny
+                // teacher options
                 actionsHtml = `
                                 <button class="btn-action" onclick="confirmSession(${session.session_id}, '${session.location_type}')">Confirm</button>
                                 <button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Deny</button>
                             `;
               } else {
-                // student can cancel
+                // student options
                 actionsHtml = `<button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Cancel Request</button>`;
               }
             } else if (session.status === "Confirmed") {
-              // show meet link if online
+              // show meet link
               if (session.location_type === "Online" && session.meeting_url) {
                 actionsHtml += `<a href="${session.meeting_url}" target="_blank" style="font-weight:bold;">🎥 Join Meeting</a><br><br>`;
               } else if (session.location_type === "In-Person") {
@@ -207,15 +202,12 @@
               }
 
               if (isTeacher) {
-                // teacher can mark complete
                 actionsHtml += `<button class="btn-action" onclick="completeSession(${session.session_id})">Mark Complete</button>`;
               } else {
-                // student just waits
                 actionsHtml += `<span style="font-size:0.8em; color:gray;">Waiting for teacher to complete</span>`;
               }
             } else if (session.status === "Completed") {
               if (!isTeacher) {
-                // student view check if already rated
                 if (session.is_rated) {
                   actionsHtml =
                     '<span style="color:#059669; font-weight:bold;">✓ Rated</span>';
@@ -223,11 +215,9 @@
                   actionsHtml = `<a href="/session/rate/${session.session_id}" class="btn-action">Rate Teacher</a>`;
                 }
               } else {
-                // teacher view
                 actionsHtml = "<span>✅ Complete</span>";
               }
             } else {
-              // denied or cancelled state
               actionsHtml = "<span>---</span>";
             }
 
@@ -257,24 +247,21 @@
         }
       }
 
-      // function to confirm a session
+      // confirm session
       async function confirmSession(id, locationType) {
-        // check lock to prevent double clicks
+        // check lock
         if (window.isProcessing) return;
-
-        // set lock
         window.isProcessing = true;
 
         let meetUrl = null;
 
-        // handle url prompt for online sessions
+        // handle meeting url
         if (locationType === "Online") {
           meetUrl = prompt(
             "Please enter the Video Call Link (e.g., Zoom, Google Meet) for this session:"
           );
 
           if (meetUrl === null) {
-            // unlock if cancelled
             window.isProcessing = false;
             return;
           }
@@ -292,18 +279,17 @@
           const msg = err.response?.data?.message || "Error confirming session";
           showToast(msg, "error");
         } finally {
-          // release lock
           window.isProcessing = false;
         }
       }
 
-      // function to deny or cancel a session
+      // deny or cancel session
       async function denySession(id) {
         if (window.isProcessing) return;
         window.isProcessing = true;
 
         if (!confirm("Are you sure you want to cancel/deny this session?")) {
-          window.isProcessing = false; // unlock
+          window.isProcessing = false;
           return;
         }
 
@@ -323,13 +309,13 @@
         }
       }
 
-      // function to mark a session as complete
+      // complete session
       async function completeSession(id) {
         if (window.isProcessing) return;
         window.isProcessing = true;
 
         if (!confirm("Mark this session as fully completed?")) {
-          window.isProcessing = false; // unlock
+          window.isProcessing = false;
           return;
         }
 

@@ -150,7 +150,9 @@
           <% }) %>
         </div>
       </div>
-      <% } %> <% } else { %>
+      <% } %> 
+      
+      <% } else { %>
 
       <div
         style="
@@ -218,16 +220,16 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
-      // client-side javascript logic
       const messageArea = document.getElementById("messageArea");
 
-      // logic runs only if the login form exists which means the user is not logged in
+      // attach login listener if form exists
       if (document.getElementById("loginForm")) {
         document
           .getElementById("loginForm")
           .addEventListener("submit", handleLoginSubmit);
       }
 
+      // handle login submit
       async function handleLoginSubmit(event) {
         event.preventDefault();
 
@@ -236,7 +238,6 @@
         messageArea.textContent = "";
 
         try {
-          // axios post request to the express api
           const response = await axios.post("/api/login", {
             email: email,
             password: password,
@@ -245,8 +246,6 @@
           if (response.status === 200) {
             messageArea.textContent = "Login Successful! Redirecting...";
             messageArea.style.color = "green";
-
-            // on success reload the page to load the authenticated dashboard view
             window.location.href = "/";
           }
         } catch (error) {
@@ -261,7 +260,7 @@
         }
       }
 
-      // search bar logic which only runs if the search input exists
+      // real-time search logic
       const searchInput = document.getElementById("searchInput");
       const resultsBox = document.getElementById("searchResults");
 
@@ -269,7 +268,7 @@
         let timeout = null;
 
         searchInput.addEventListener("input", (e) => {
-          // debounce clears the previous timer so we do not spam the server
+          // prevent spamming api while typing
           clearTimeout(timeout);
           const query = e.target.value.trim();
 
@@ -278,7 +277,7 @@
             return;
           }
 
-          // waits 300ms after the user stops typing to send the request
+          // fetch results after delay
           timeout = setTimeout(async () => {
             try {
               const response = await axios.get(
@@ -320,7 +319,7 @@
           }, 300);
         });
 
-        // hides the dropdown if the user clicks anywhere else on the page
+        // close search results on outside click
         document.addEventListener("click", (e) => {
           if (
             !searchInput.contains(e.target) &&

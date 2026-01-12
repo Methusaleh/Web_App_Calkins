@@ -11,7 +11,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import "dotenv/config";
 
-// setup for the express app and database connection
+// app and db setup
 const app = express();
 const port = process.env.PORT || 8080;
 const { Pool } = pg;
@@ -23,11 +23,11 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// configure the view engine to use ejs templates
+// view engine setup
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// configure session middleware to store logins in the database
+// session setup
 app.use(
   session({
     store: new PgSession({
@@ -44,14 +44,14 @@ app.use(
   })
 );
 
-// setup standard middleware for parsing data and logging
+// standard middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(morgan("combined"));
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
-// middleware to check if a user is logged in
+// auth middleware
 function isAuthenticated(req, res, next) {
   if (req.session.user) {
     req.user = req.session.user;
@@ -65,7 +65,7 @@ function isAuthenticated(req, res, next) {
   }
 }
 
-// middleware to check if a user is an administrator
+// admin middleware
 function isAdmin(req, res, next) {
   if (req.session.user && req.session.user.isAdmin) {
     req.user = req.session.user;
@@ -81,7 +81,7 @@ function isAdmin(req, res, next) {
   }
 }
 
-// function to create database tables if they do not exist
+// create db tables
 async function createTables() {
   const tableCreationQueries = `
         CREATE TABLE IF NOT EXISTS Users (
@@ -183,16 +183,15 @@ async function createTables() {
   }
 }
 
-// landing page route
+// landing page
 app.get("/", (req, res) => {
-  // if user is logged in send them to dashboard
   if (req.session.user) {
     return res.redirect("/dashboard");
   }
   res.render("landing");
 });
 
-// About / Tech Spec Page
+// about page
 app.get("/about", (req, res) => {
   res.render("about", {
     pageTitle: "About SkillSwap",
@@ -200,24 +199,21 @@ app.get("/about", (req, res) => {
   });
 });
 
-// dashboard route
+// dashboard
 app.get("/dashboard", async (req, res) => {
   let dbStatus = "Failed";
   let dbVersion = "Error";
 
-  // setup database tables
   const tablesReady = await createTables();
   const user = req.session.user || null;
   let topTeachers = [];
 
   if (tablesReady) {
     try {
-      // check connection
       const result = await pool.query("SELECT version()");
       dbVersion = result.rows[0].version;
       dbStatus = "Success";
 
-      // get top rated teachers
       const topTeachersRes = await pool.query(
         `SELECT u.user_id, u.user_name, u.avatar_style, COUNT(r.rating_id) as like_count
                  FROM Users u
@@ -232,22 +228,21 @@ app.get("/dashboard", async (req, res) => {
     }
   }
 
-  // render the main app view
   res.render("index", { dbStatus, dbVersion, user, topTeachers });
 });
 
-// login route fix
+// login redirect
 app.get("/login", (req, res) => {
   res.redirect("/dashboard");
 });
 
-// loads the registration page if the user is not logged in
+// register page
 app.get("/register", async (req, res) => {
   if (req.session.user) return res.redirect("/");
   res.render("register", { pageTitle: "Register", user: null });
 });
 
-// handles user registration by saving new account details to the database
+// handle registration
 app.post("/api/register", async (req, res) => {
   const {
     email,
@@ -291,7 +286,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// handles user login by verifying password and creating a session
+// handle login
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -322,7 +317,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// logs the user out by destroying the current session
+// handle logout
 app.post("/api/logout", (req, res) => {
   if (req.session)
     req.session.destroy((err) => {
@@ -332,7 +327,7 @@ app.post("/api/logout", (req, res) => {
   else res.status(200).json({ message: "No session." });
 });
 
-// renders the profile editing page and loads the master list of skills
+// edit profile page
 app.get("/profile/edit", isAuthenticated, async (req, res) => {
   try {
     const skillsResult = await pool.query(
@@ -348,39 +343,31 @@ app.get("/profile/edit", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- password reset section ---
-
-// show the forgot password form
+// forgot password page
 app.get("/forgot-password", (req, res) => {
   res.render("forgot_password");
 });
 
-// handle the form submission
+// handle forgot password
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
-
-  // create a random token
   const token =
     Math.random().toString(36).substring(2) + Date.now().toString(36);
   const oneHour = 3600000;
   const expires = Date.now() + oneHour;
 
   try {
-    // save token to db
     const result = await pool.query(
       "UPDATE Users SET reset_token = $1, reset_expires = $2 WHERE email = $3 RETURNING user_name",
       [token, expires, email]
     );
 
     if (result.rows.length > 0) {
-      // success: render the 'sent' page and pass the token for the demo button
       res.render("forgot_password_sent", {
         email: email,
         token: token,
       });
     } else {
-      // security: for this project we will just show the same page to avoid fishing
-      // but in a real app you might warn them
       res.render("forgot_password_sent", {
         email: email,
         token: null,
@@ -392,11 +379,9 @@ app.post("/forgot-password", async (req, res) => {
   }
 });
 
-// show the new password form
+// reset password page
 app.get("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
-
-  // check if token exists and is valid
   const result = await pool.query(
     "SELECT user_id FROM Users WHERE reset_token = $1 AND reset_expires > $2",
     [token, Date.now()]
@@ -409,16 +394,13 @@ app.get("/reset-password/:token", async (req, res) => {
   res.render("reset_password", { token });
 });
 
-// update the password
+// handle reset password
 app.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { newPassword } = req.body;
-
-  // hash the new password
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   try {
-    // update password and clear token
     await pool.query(
       "UPDATE Users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE reset_token = $2",
       [hashedPassword, token]
@@ -431,7 +413,7 @@ app.post("/reset-password/:token", async (req, res) => {
   }
 });
 
-// renders the public view of a user profile with skills and ratings
+// view user profile
 app.get("/profile/view/:id", isAuthenticated, async (req, res) => {
   const targetId = req.params.id;
   try {
@@ -474,7 +456,7 @@ app.get("/profile/view/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// updates the basic profile info like name and grade level
+// update basic profile info
 app.put("/api/user/profile/:id", isAuthenticated, async (req, res) => {
   if (req.user.id !== parseInt(req.params.id))
     return res.status(403).json({ message: "Access denied." });
@@ -494,7 +476,7 @@ app.put("/api/user/profile/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the current list of skills a user offers and seeks
+// get user skills
 app.get("/api/user/skills/:id", isAuthenticated, async (req, res) => {
   try {
     const offered = await pool.query(
@@ -511,7 +493,7 @@ app.get("/api/user/skills/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// updates the skills a user offers by clearing the old list and inserting new ones
+// update offered skills
 app.post("/api/user/skills/offer", isAuthenticated, async (req, res) => {
   const userId = req.user.id;
   const { skills } = req.body;
@@ -545,7 +527,7 @@ app.post("/api/user/skills/offer", isAuthenticated, async (req, res) => {
   }
 });
 
-// updates the skills a user wants to learn by clearing old ones and inserting new ones
+// update sought skills
 app.post("/api/user/skills/seek", isAuthenticated, async (req, res) => {
   const userId = req.user.id;
   const { skills } = req.body;
@@ -579,7 +561,7 @@ app.post("/api/user/skills/seek", isAuthenticated, async (req, res) => {
   }
 });
 
-// allows a user to suggest a new skill to be added to the master list
+// suggest new skill
 app.post("/api/skills/suggest", isAuthenticated, async (req, res) => {
   const { skillName, userId } = req.body;
   try {
@@ -602,11 +584,7 @@ app.post("/api/skills/suggest", isAuthenticated, async (req, res) => {
   }
 });
 
-// =================================================================
-// 3. SESSIONS & MESSAGES
-// =================================================================
-
-// loads the session request form
+// session request form
 app.get("/session/request", isAuthenticated, async (req, res) => {
   try {
     const skillsResult = await pool.query(
@@ -622,12 +600,12 @@ app.get("/session/request", isAuthenticated, async (req, res) => {
   }
 });
 
-// renders the main dashboard for managing sessions
+// my sessions page
 app.get("/my_sessions", isAuthenticated, (req, res) => {
   res.render("my_sessions", { pageTitle: "My Sessions", user: req.user });
 });
 
-// renders the rating form for a completed session
+// session rating form
 app.get("/session/rate/:id", isAuthenticated, async (req, res) => {
   try {
     const res1 = await pool.query(
@@ -649,7 +627,7 @@ app.get("/session/rate/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// finds users who teach a specific skill to populate the dropdown
+// get providers for a skill
 app.get("/api/skills/:id/providers", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
@@ -662,7 +640,7 @@ app.get("/api/skills/:id/providers", isAuthenticated, async (req, res) => {
   }
 });
 
-// creates a new session request
+// create session request
 app.post("/api/sessions/request", isAuthenticated, async (req, res) => {
   const requesterId = req.user.id;
   const {
@@ -696,18 +674,18 @@ app.post("/api/sessions/request", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the full history of sessions for a user
+// get session history
 app.get("/api/sessions/user/:id", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT s.*, p.user_name AS provider_name, r.user_name AS requester_name, sk.skill_name AS skill_name,
-            (CASE WHEN rt.rating_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_rated
-            FROM Sessions s
-            JOIN Users p ON s.provider_id = p.user_id 
-            JOIN Users r ON s.requester_id = r.user_id 
-            JOIN Skills sk ON s.skill_taught_id = sk.skill_id
-            LEFT JOIN Ratings rt ON s.session_id = rt.session_id
-            WHERE s.provider_id = $1 OR s.requester_id = $1 ORDER BY s.session_date_time DESC`,
+             (CASE WHEN rt.rating_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_rated
+             FROM Sessions s
+             JOIN Users p ON s.provider_id = p.user_id 
+             JOIN Users r ON s.requester_id = r.user_id 
+             JOIN Skills sk ON s.skill_taught_id = sk.skill_id
+             LEFT JOIN Ratings rt ON s.session_id = rt.session_id
+             WHERE s.provider_id = $1 OR s.requester_id = $1 ORDER BY s.session_date_time DESC`,
       [req.params.id]
     );
     res.status(200).json({ sessions: result.rows });
@@ -716,7 +694,7 @@ app.get("/api/sessions/user/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// allows a provider to confirm a session request
+// confirm session
 app.post("/api/sessions/confirm", isAuthenticated, async (req, res) => {
   const { sessionId, meetingUrl } = req.body;
   try {
@@ -732,7 +710,7 @@ app.post("/api/sessions/confirm", isAuthenticated, async (req, res) => {
   }
 });
 
-// allows a user to deny or cancel a session
+// deny or cancel session
 app.post("/api/sessions/deny", isAuthenticated, async (req, res) => {
   const { sessionId, reason } = req.body;
   try {
@@ -755,7 +733,7 @@ app.post("/api/sessions/deny", isAuthenticated, async (req, res) => {
   }
 });
 
-// marks a confirmed session as complete
+// complete session
 app.post("/api/sessions/complete", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
@@ -770,7 +748,7 @@ app.post("/api/sessions/complete", isAuthenticated, async (req, res) => {
   }
 });
 
-// submits a rating for a completed session
+// rate session
 app.post("/api/sessions/rate", isAuthenticated, async (req, res) => {
   const { sessionId, raterId, rateeId, likeStatus, feedbackText } = req.body;
   if (parseInt(raterId) === parseInt(rateeId))
@@ -788,12 +766,12 @@ app.post("/api/sessions/rate", isAuthenticated, async (req, res) => {
   }
 });
 
-// renders the inbox view
+// inbox page
 app.get("/messages", isAuthenticated, (req, res) =>
   res.render("inbox", { pageTitle: "My Inbox", user: req.user })
 );
 
-// renders the chat view with a specific user
+// chat page
 app.get("/messages/:id", isAuthenticated, async (req, res) => {
   try {
     const u = await pool.query(
@@ -811,7 +789,7 @@ app.get("/messages/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the list of recent conversations
+// get inbox conversations
 app.get("/api/messages/inbox", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
@@ -829,7 +807,7 @@ app.get("/api/messages/inbox", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the message history between two users
+// get message history
 app.get(
   "/api/messages/thread/:otherUserId",
   isAuthenticated,
@@ -849,7 +827,7 @@ app.get(
   }
 );
 
-// sends a new message to another user
+// send message
 app.post("/api/messages/send", isAuthenticated, async (req, res) => {
   try {
     await pool.query(
@@ -862,16 +840,12 @@ app.post("/api/messages/send", isAuthenticated, async (req, res) => {
   }
 });
 
-// =================================================================
-// 4. ADMIN PANEL (Protected)
-// =================================================================
-
-// renders the main admin dashboard
+// admin dashboard
 app.get("/admin", isAdmin, (req, res) => {
   res.render("admin_dashboard", { pageTitle: "Admin Panel", user: req.user });
 });
 
-// fetches a list of all users for the admin panel
+// get all users (admin)
 app.get("/api/admin/users", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -883,7 +857,7 @@ app.get("/api/admin/users", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to promote or demote a user
+// toggle user role (admin)
 app.post("/api/admin/users/:id/toggle_role", isAdmin, async (req, res) => {
   const targetId = parseInt(req.params.id);
   if (targetId === 1)
@@ -911,7 +885,7 @@ app.post("/api/admin/users/:id/toggle_role", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to delete a user account
+// delete user (admin)
 app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
   const targetId = parseInt(req.params.id);
   if (targetId === 1)
@@ -934,7 +908,7 @@ app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
   }
 });
 
-// fetches all security reports for review
+// get reports (admin)
 app.get("/api/admin/reports", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -947,7 +921,7 @@ app.get("/api/admin/reports", isAdmin, async (req, res) => {
   }
 });
 
-// updates the status of a security report
+// update report status (admin)
 app.post("/api/admin/report/:id/status", isAdmin, async (req, res) => {
   try {
     await pool.query(
@@ -964,7 +938,7 @@ app.post("/api/admin/report/:id/status", isAdmin, async (req, res) => {
   }
 });
 
-// allows a user to submit a security report against another user
+// submit user report
 app.post("/api/reports", isAuthenticated, async (req, res) => {
   try {
     await pool.query(
@@ -977,7 +951,7 @@ app.post("/api/reports", isAuthenticated, async (req, res) => {
   }
 });
 
-//  fetches the system audit trail
+// get audit logs (admin)
 app.get("/api/admin/logs", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -993,7 +967,7 @@ app.get("/api/admin/logs", isAdmin, async (req, res) => {
   }
 });
 
-// fetches pending skill suggestions for admin review
+// get skill suggestions (admin)
 app.get("/api/admin/suggestions", isAdmin, async (req, res) => {
   try {
     const res1 = await pool.query(
@@ -1005,7 +979,7 @@ app.get("/api/admin/suggestions", isAdmin, async (req, res) => {
   }
 });
 
-// approves or rejects a suggested skill
+// approve/reject skill suggestion (admin)
 app.post("/api/admin/suggestions/action", isAdmin, async (req, res) => {
   const { suggestionId, action } = req.body;
   const client = await pool.connect();
@@ -1045,7 +1019,7 @@ app.post("/api/admin/suggestions/action", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to manually add a new skill
+// create skill manually (admin)
 app.post("/api/skills", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -1062,7 +1036,7 @@ app.post("/api/skills", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to rename an existing skill
+// update skill name (admin)
 app.put("/api/skills/:id", isAdmin, async (req, res) => {
   try {
     await pool.query("UPDATE Skills SET skill_name = $1 WHERE skill_id = $2", [
@@ -1079,7 +1053,7 @@ app.put("/api/skills/:id", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to delete a skill
+// delete skill (admin)
 app.delete("/api/skills/:id", isAdmin, async (req, res) => {
   try {
     await pool.query("DELETE FROM Skills WHERE skill_id = $1", [req.params.id]);
@@ -1093,7 +1067,7 @@ app.delete("/api/skills/:id", isAdmin, async (req, res) => {
   }
 });
 
-// searches for users or skills matching a query
+// global search
 app.get("/api/search", isAuthenticated, async (req, res) => {
   const q = req.query.q;
   if (!q || q.length < 2) return res.json({ results: [] });
@@ -1110,7 +1084,7 @@ app.get("/api/search", isAuthenticated, async (req, res) => {
   }
 });
 
-// starts the server on the specified port
+// start server
 app.listen(port, "0.0.0.0", () =>
   console.log(`Server is running on port ${port}`)
 );

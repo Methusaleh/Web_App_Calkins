@@ -60,10 +60,10 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
       const requesterId = "<%= user.id %>";
-      // flag to prevent double submission
+      // prevent double submission
       window.isProcessing = false;
 
-      // helper function to show toast notifications
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -77,12 +77,12 @@
         }, 3000);
       }
 
-      // loads the list of tutors who teach the selected skill
+      // load tutors for skill
       async function loadProviders() {
         const skillId = document.getElementById("skillTaughtId").value;
         const providerSelect = document.getElementById("providerId");
 
-        // reset provider dropdown
+        // reset dropdown
         providerSelect.innerHTML =
           '<option value="">-- Loading Tutors... --</option>';
         providerSelect.disabled = true;
@@ -94,7 +94,7 @@
         }
 
         try {
-          // fetch specific providers for this skill from the api
+          // fetch providers
           const response = await axios.get(`/api/skills/${skillId}/providers`);
           const providers = response.data.providers;
 
@@ -106,7 +106,7 @@
               '<option value="" disabled>No tutors found for this skill</option>';
             showToast("No tutors currently offer this skill.", "info");
           } else {
-            // populate the dropdown with available tutors
+            // populate dropdown
             providers.forEach((p) => {
               providerSelect.innerHTML += `<option value="${p.user_id}">${p.user_name}</option>`;
             });
@@ -120,13 +120,13 @@
         }
       }
 
-      // handles form submission with locking and toasts
+      // handle form submission
       document
         .getElementById("sessionRequestForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
 
-          // checks lock to prevent double clicks
+          // check lock
           if (window.isProcessing) return;
 
           const submitBtn = document.querySelector('button[type="submit"]');
@@ -142,17 +142,17 @@
             return;
           }
 
-          // sets lock and updates button text
+          // set lock
           window.isProcessing = true;
           submitBtn.disabled = true;
           submitBtn.textContent = "Sending...";
 
-          // converts local time to utc for storage
+          // convert time to utc
           const localDate = new Date(rawDateValue);
           const sessionDateTime = localDate.toISOString();
 
           try {
-            // sends the session request to the api
+            // send request
             const response = await axios.post("/api/sessions/request", {
               requesterId: requesterId,
               providerId: providerId,
@@ -163,7 +163,7 @@
 
             showToast("Request sent successfully!", "success");
 
-            // redirects to the session list after a short delay
+            // redirect to sessions
             setTimeout(() => {
               window.location.href = "/my_sessions";
             }, 1500);
@@ -172,20 +172,20 @@
               error.response?.data?.message || "Error submitting request.";
             showToast(msg, "error");
 
-            // resets button only on error
+            // reset button
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
           } finally {
-            // releases lock
+            // release lock
             window.isProcessing = false;
           }
         });
 
-      // PREVENT PAST DATES
+      // prevent past dates
       const dateInput = document.getElementById("sessionDateTime");
       const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Adjust for local time
-      dateInput.min = now.toISOString().slice(0, 16); // Set minimum to "Right Now"
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); 
+      dateInput.min = now.toISOString().slice(0, 16); 
     </script>
   </body>
 </html>

@@ -5,6 +5,7 @@
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css" />
     <style>
+      /* admin styles */
       .admin-section {
         margin-bottom: 40px;
         border: 1px solid #ddd;
@@ -42,10 +43,10 @@
       }
       .btn-promote {
         background-color: #3b82f6;
-      } /* Blue */
+      }
       .btn-demote {
         background-color: #f59e0b;
-      } /* Amber */
+      }
       body {
         background-image: url("/images/background_admin.png") !important;
         background-attachment: fixed !important;
@@ -163,6 +164,7 @@
           </table>
         </div>
       </section>
+      
       <div class="admin-section">
         <h2>1. Pending Skill Suggestions</h2>
         <p>Review skills suggested by users.</p>
@@ -243,7 +245,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      // helper function to show toast notifications
+      // toast notifications
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -257,7 +259,7 @@
         }, 3000);
       }
 
-      // load all data tables when the page loads
+      // load initial data
       document.addEventListener("DOMContentLoaded", () => {
         fetchSuggestions();
         fetchReports();
@@ -265,7 +267,7 @@
         fetchLogs();
       });
 
-      // fetches pending skill suggestions from the api
+      // get pending suggestions
       async function fetchSuggestions() {
         const tbody = document.getElementById("suggestionsBody");
         try {
@@ -300,7 +302,7 @@
         }
       }
 
-      // sends approval or rejection for a skill suggestion
+      // approve or reject suggestion
       async function processSuggestion(id, action) {
         try {
           await axios.post("/api/admin/suggestions/action", {
@@ -314,7 +316,7 @@
         }
       }
 
-      // fetches all security reports from the api
+      // get security reports
       async function fetchReports() {
         const tbody = document.getElementById("reportsBody");
         try {
@@ -349,7 +351,7 @@
         }
       }
 
-      // updates the status of a specific security report
+      // update report status
       async function updateReportStatus(id, newStatus) {
         if (!newStatus) return;
         try {
@@ -363,7 +365,7 @@
         }
       }
 
-      // fetches the list of all users from the api
+      // get all users
       async function fetchUsers() {
         const tbody = document.getElementById("usersBody");
         try {
@@ -375,7 +377,7 @@
             const isRootAdmin = u.user_id === 1;
             const isMe = u.user_id == "<%= user.id %>";
 
-            // visual protection for root admin and current user
+            // protect root admin and self
             if (isRootAdmin) {
               actions =
                 '<span style="color:#d97706; font-weight:bold; border:1px solid #d97706; padding:2px 6px; border-radius:4px;">ROOT ADMIN</span>';
@@ -407,7 +409,7 @@
         }
       }
 
-      // promotes or demotes a user's admin status
+      // toggle admin role
       async function toggleAdmin(id) {
         if (!confirm(`Change Admin status for User ID ${id}?`)) return;
         try {
@@ -422,7 +424,7 @@
         }
       }
 
-      // permanently deletes a user account
+      // delete user
       async function deleteUser(id) {
         if (
           !confirm(`Permanently DELETE User ID ${id}? This cannot be undone.`)
@@ -437,7 +439,7 @@
         }
       }
 
-      // handles manual skill addition by the admin
+      // add manual skill
       document
         .getElementById("addSkillForm")
         .addEventListener("submit", async (e) => {
@@ -452,7 +454,7 @@
           }
         });
 
-      // function to fetch and display audit logs
+      // get system logs
       async function fetchLogs() {
         const tbody = document.getElementById("logsBody");
 
@@ -466,10 +468,9 @@
             return;
           }
 
-          tbody.innerHTML = ""; // clear loading message
+          tbody.innerHTML = ""; 
 
           logs.forEach((log) => {
-            // format date (e.g., "12/9/2025, 1:53 PM")
             const dateStr = new Date(log.timestamp).toLocaleString();
 
             const row = `

@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="/styles/main.css">
     
     <style>
-        /* Forces the body to be WHITE behind everything */
-        /* This hides the gray gap by making it blend with the footer */
+        /* global layout styles */
         body {
             margin: 0;
             padding: 0;
@@ -17,22 +16,22 @@
             background-color: white !important; 
         }
 
-        /* High contrast override (keeps your existing behavior) */
+        /* high contrast accessibility */
         body.high-contrast-mode nav,
         body.high-contrast-mode .navbar {
             background: #000 !important;
             border-bottom: 2px solid yellow;
         }
 
-        /* Navbar: reduced height and persistent 2px yellow bottom border */
+        /* navbar layout */
         .navbar {
             background: #2D4059;
-            padding: 0.5rem 1.5rem; /* smaller vertical padding to shrink navbar */
+            padding: 0.5rem 1.5rem; 
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid #FFD460; /* 2px yellow border */
+            border-bottom: 2px solid #FFD460; 
             box-sizing: border-box;
         }
 
@@ -52,16 +51,13 @@
             border-radius: 4px;
         }
 
-        /* The gradient lives here now (Blue top, stops at footer) */
+        /* full width hero section */
         .landing-hero {
             width: 100%;
             max-width: none !important;
             margin: 0 !important;
             border-radius: 0 !important;
-            
-            /* This forces the blue section to stretch and fill all available space */
             flex: 1; 
-            
             display: flex;
             align-items: center;
             justify-content: center;
@@ -70,7 +66,7 @@
             padding: 20px;
         }
 
-        /* Ensure footer stays white and sits on top */
+        /* footer z-index fix */
         footer {
             background: #2D4059 !important;
             position: relative;
@@ -78,7 +74,7 @@
             margin-top: 0 !important;
         }
 
-        /* CTA styles */
+        /* button styles */
         .cta-primary {
             background: #EA5455;
             color: white;

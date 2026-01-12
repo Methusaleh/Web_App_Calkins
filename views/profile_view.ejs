@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
+      /* profile container */
       .profile-header {
         background: #fbdddd;
         padding: 20px;
@@ -12,6 +13,8 @@
         margin-bottom: 20px;
         border: 5px solid #ea5455;
       }
+      
+      /* skill badges */
       .badge {
         display: inline-block;
         padding: 4px 8px;
@@ -30,6 +33,7 @@
         background-color: #ea5455cc;
       }
 
+      /* skill list styles */
       .skill-list {
         list-style: none;
         padding: 0;
@@ -44,6 +48,7 @@
         justify-content: space-between;
       }
 
+      /* reputation box */
       .rating-box {
         background: #fffbeb;
         border: 5px solid #fcd34d;
@@ -210,7 +215,7 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
-      // creates a temporary toast notification on the screen
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -218,32 +223,30 @@
         toast.textContent = message;
         container.appendChild(toast);
 
-        // triggers the slide in animation
+        // animate in
         requestAnimationFrame(() => toast.classList.add("show"));
 
-        // removes the toast after 3 seconds
+        // remove after delay
         setTimeout(() => {
           toast.classList.remove("show");
           setTimeout(() => toast.remove(), 300);
         }, 3000);
       }
 
-      // allows a user to report another user for bad behavior
+      // handle reporting a user
       async function reportUser(reportedUserId) {
-        // asks the user to type a reason for the report
+        // prompt for reason
         const reason = prompt("Please describe the issue with this user:");
 
-        // if the user clicks cancel do nothing
         if (!reason) return;
 
         try {
-          // sends the report details to the api
+          // submit report
           const response = await axios.post("/api/reports", {
             reportedUserId: reportedUserId,
             reason: reason,
           });
 
-          // shows a success message if it worked
           showToast(response.data.message, "success");
         } catch (error) {
           console.error(error);

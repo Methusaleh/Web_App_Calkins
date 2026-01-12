@@ -19,7 +19,7 @@ const pool = new Pool({
 });
 
 // --- CONFIGURATION ---
-const USERS_TO_CREATE = 20;
+const USERS_TO_CREATE = 19;
 const DEFAULT_PASSWORD = "password123"; // Simple password for all fake users
 
 // --- DATA ARRAYS ---

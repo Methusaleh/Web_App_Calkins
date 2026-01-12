@@ -53,7 +53,8 @@
                 <option value="initials">🔠 Initials</option>
                 <option value="micah">🎨 Hand Drawn</option>
             </select>
-            <p style="text-color: black; font-weight: bold;">* = Required field</p>
+            
+            <p style="color: black; font-weight: bold;">* = Required field</p>
 
             <button type="submit">Register Account</button>
         </form>
@@ -66,7 +67,7 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <script>
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -74,25 +75,23 @@
             toast.textContent = message;
             container.appendChild(toast);
             
-            // triggers the slide in animation
+            // animate in
             requestAnimationFrame(() => toast.classList.add('show'));
             
-            // removes the toast after 3 seconds
+            // remove after delay
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // listens for the form submit event
+        // handle form submit
         document.getElementById('registerForm').addEventListener('submit', handleRegisterSubmit);
 
-        // handles the registration logic
         async function handleRegisterSubmit(event) {
-            // prevents the default form submission to stop page reload
             event.preventDefault(); 
 
-            // get values from the form inputs
+            // capture form data
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPassword').value;
             const passwordConfirm = document.getElementById('passwordConfirm').value;
@@ -104,14 +103,14 @@
             const messageArea = document.getElementById('messageArea');
             messageArea.textContent = ''; 
 
-            // client side check to ensure passwords match
+            // validate passwords match
             if (password !== passwordConfirm) {
                 showToast('Error: Passwords do not match.', 'error');
                 return;
             }
 
             try {
-                // sends the registration data to the backend api
+                // send registration data
                 const response = await axios.post('/api/register', {
                     email: email,
                     password: password,
@@ -122,18 +121,17 @@
                     avatarStyle: avatarStyle
                 });
 
-                // if registration is successful redirect to the login page
+                // success redirect
                 if (response.status === 201) {
                     showToast('Registration successful! Redirecting to login...', 'success');
                     
-                    // wait a moment for the toast to show before redirecting
                     setTimeout(() => {
                         window.location.href = '/'; 
                     }, 1500);
                 }
 
             } catch (error) {
-                // handle errors like duplicate email
+                // handle errors
                 let errorMessage = 'An unexpected server error occurred.';
                 
                 if (error.response) {

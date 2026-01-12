@@ -5,10 +5,10 @@
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css">
     <style>
-        /* styles for the list of conversations */
+        /* conversation list styles */
         .inbox-list { list-style: none; padding: 0; }
         
-        /* individual conversation row styling */
+        /* row styles */
         .inbox-item { 
             display: flex; justify-content: space-between; align-items: center;
             background: white; border: 1px solid #eee; 
@@ -17,7 +17,7 @@
         }
         .inbox-item:hover { background: #f9fafb; border-color: #ccc; }
         
-        /* styling for names and message previews */
+        /* text styles */
         .inbox-name { font-weight: bold; font-size: 1.1em; color: #ea5455cc; }
         .inbox-preview { color: #666; font-size: 0.9em; margin-top: 5px; }
         .inbox-time { font-size: 0.8em; color: #999; white-space: nowrap; }
@@ -40,7 +40,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -48,40 +48,40 @@
             toast.textContent = message;
             container.appendChild(toast);
             
-            // triggers the slide in animation
+            // animate in
             requestAnimationFrame(() => toast.classList.add('show'));
             
-            // removes the toast after 3 seconds
+            // remove after delay
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // load conversations when the page finishes loading
+        // load conversations
         document.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('inboxList');
             const loading = document.getElementById('loadingMsg');
 
             try {
-                // fetch the list of active conversations from the api
+                // fetch messages
                 const response = await axios.get('/api/messages/inbox');
                 const conversations = response.data.conversations;
 
-                // hide the loading text once data is received
+                // hide loader
                 loading.style.display = 'none';
 
-                // show a message if the inbox is empty
+                // handle empty inbox
                 if (conversations.length === 0) {
                     list.innerHTML = '<p>No messages yet.</p>';
                     return;
                 }
 
-                // loop through each conversation and create a list item
+                // render list
                 conversations.forEach(convo => {
                     const time = new Date(convo.timestamp).toLocaleDateString() + ' ' + new Date(convo.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     
-                    // build the html for the conversation row
+                    // create html row
                     const item = `
                         <a href="/messages/${convo.other_user_id}" class="inbox-item">
                             <div>

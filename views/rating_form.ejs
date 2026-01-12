@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
-      /* specific styles for the rating form container */
+      /* form container */
       .rating-container {
         max-width: 600px;
         margin: 0 auto;
@@ -15,7 +15,7 @@
         background-color: #f9f9f9;
       }
 
-      /* styles for the radio button options to ensure alignment */
+      /* radio button alignment */
       .radio-option {
         display: flex;
         align-items: center;
@@ -31,7 +31,7 @@
         margin-bottom: 0;
       }
 
-      /* styling for the feedback text area */
+      /* feedback text area */
       textarea {
         width: 100%;
         height: 100px;
@@ -103,7 +103,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      // helper function to show toast notifications
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -111,53 +111,49 @@
         toast.textContent = message;
         container.appendChild(toast);
 
-        // triggers the slide in animation
+        // animate in
         requestAnimationFrame(() => toast.classList.add("show"));
 
-        // removes the toast after 3 seconds
+        // remove after delay
         setTimeout(() => {
           toast.classList.remove("show");
           setTimeout(() => toast.remove(), 300);
         }, 3000);
       }
 
-      // handles the form submission
+      // handle form submit
       document
         .getElementById("ratingForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
 
-          // 1. Select the button so we can lock it
           const submitBtn = document.querySelector('button[type="submit"]');
           const originalText = submitBtn.textContent;
 
-          // capture form values
           const sessionId = document.getElementById("sessionId").value;
           const raterId = document.getElementById("raterId").value;
           const rateeId = document.getElementById("rateeId").value;
           const feedbackText = document.getElementById("feedbackText").value;
 
-          // determine which radio button was selected
           const likeRadio = document.querySelector(
             'input[name="likeStatus"]:checked'
           );
           const likeStatus = likeRadio ? likeRadio.value === "true" : null;
 
-          // ensures a rating is actually selected
           if (likeStatus === null) {
             showToast(
               "Please select whether you recommend this teacher.",
               "error"
             );
-            return; // Stop here (don't disable the button yet)
+            return;
           }
 
-          // 2. LOCK THE BUTTON (Visual Feedback + Prevention)
+          // disable button to prevent double submit
           submitBtn.disabled = true;
           submitBtn.textContent = "Submitting...";
 
           try {
-            // sends the rating to the backend api
+            // send rating
             await axios.post("/api/sessions/rate", {
               sessionId: sessionId,
               raterId: raterId,
@@ -168,12 +164,12 @@
 
             showToast("Rating submitted!", "success");
 
-            // redirects the user back to their sessions list
+            // redirect to sessions list
             setTimeout(() => {
               window.location.href = "/my_sessions";
             }, 1500);
           } catch (error) {
-            // 3. UNLOCK THE BUTTON (If it fails, let them try again)
+            // re-enable button on error
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
 

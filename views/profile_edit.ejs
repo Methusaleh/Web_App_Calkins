@@ -5,9 +5,9 @@
     <link rel="stylesheet" href="/styles/main.css">
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
-        /* ADDED: Hover effect to help users track rows */
+        /* row hover effect */
         tr:hover {
-            background-color: #f3f4f6; /* Light gray highlight on hover */
+            background-color: #f3f4f6; 
         }
     </style>
 </head>
@@ -67,10 +67,10 @@
                             <tr style="border-bottom: 1px solid #b0b0b0; vertical-align: middle;">
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="skill-toggle" 
-                                        data-id="<%= skill.skill_id %>"
-                                        id="skill_<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="skill-toggle" 
+                                           data-id="<%= skill.skill_id %>"
+                                           id="skill_<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                                 
                                 <td style="vertical-align: middle;">
@@ -117,10 +117,10 @@
                             <tr style="border-bottom: 1px solid #b0b0b0; vertical-align: middle;">
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="seek-toggle" 
-                                        data-id="<%= skill.skill_id %>"
-                                        id="seek_skill_<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="seek-toggle" 
+                                           data-id="<%= skill.skill_id %>"
+                                           id="seek_skill_<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                                 
                                 <td style="vertical-align: middle;">
@@ -129,15 +129,15 @@
 
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="seek-virtual" 
-                                        data-id="<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="seek-virtual" 
+                                           data-id="<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="seek-inperson" 
-                                        data-id="<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="seek-inperson" 
+                                           data-id="<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                             </tr>
                         <% }) %>
@@ -161,11 +161,9 @@
     
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // --- Client-Side JavaScript Logic ---
-        
-        const userId = '<%= user.id %>'; // pass the user's id for api submissions
+        const userId = '<%= user.id %>';
 
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -179,24 +177,21 @@
             }, 3000);
         }
 
-        // 1. logic for saving skills offered
+        // handle offered skills submit
         document.getElementById('skillOfferForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const skillsToSubmit = [];
-            
-            // iterate over all the master checkboxes to find selected skills
             const skillCheckboxes = document.querySelectorAll('.skill-toggle');
 
             skillCheckboxes.forEach(checkbox => {
                 if (checkbox.checked) {
                     const id = checkbox.getAttribute('data-id');
                     
-                    // find the corresponding location checkboxes for this skill id
+                    // check location preferences
                     const canDoVirtual = document.querySelector(`.loc-virtual[data-id="${id}"]`).checked;
                     const canDoInPerson = document.querySelector(`.loc-inperson[data-id="${id}"]`).checked;
 
-                    // translation logic converts ui choices to database flags
                     let isVirtualOnly = false;
                     let isInPersonOnly = false;
 
@@ -205,7 +200,6 @@
                     } else if (!canDoVirtual && canDoInPerson) {
                         isInPersonOnly = true;
                     } 
-                    // if both are checked, both flags remain false meaning flexible
 
                     skillsToSubmit.push({
                         skillId: id,
@@ -216,7 +210,7 @@
             });
 
             try {
-                // sends the array of selected skills to the backend
+                // send data to api
                 const response = await axios.post('/api/user/skills/offer', {
                     userId: userId, 
                     skills: skillsToSubmit
@@ -228,13 +222,11 @@
             }
         });
 
-        // 2. logic for saving skills sought
+        // handle sought skills submit
         document.getElementById('skillSeekForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const skillsToSubmit = [];
-            
-            // iterate over the seek toggle checkboxes
             const skillCheckboxes = document.querySelectorAll('.seek-toggle');
 
             skillCheckboxes.forEach(checkbox => {
@@ -273,7 +265,7 @@
             }
         });
         
-        // 3. logic for suggesting a skill
+        // handle skill suggestion
         document.getElementById('suggestSkillForm').addEventListener('submit', async (e) => {
              e.preventDefault();
              const skillName = document.getElementById('newSkillName').value;
@@ -293,7 +285,7 @@
             }
         });
 
-        // 4. logic for basic profile update
+        // handle profile update
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -314,8 +306,7 @@
             }
         });
 
-       // 5. pre-fill skills on page load
-       // fetches the users current skills and checks the boxes
+       // load existing skills on page load
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const response = await axios.get(`/api/user/skills/${userId}`);
@@ -325,7 +316,7 @@
                     skillList.forEach(skill => {
                         const id = skill.skill_id;
                         
-                        // check the master toggle for this skill
+                        // check the main toggle
                         const masterBox = document.getElementById(`${type}skill_${id}`);
                         if (masterBox) masterBox.checked = true;
 
@@ -335,13 +326,13 @@
                         const virtualBox = document.querySelector(`${virtualClass}[data-id="${id}"]`);
                         const inPersonBox = document.querySelector(`${inPersonClass}[data-id="${id}"]`);
 
-                        // determine which location boxes to check based on db flags
+                        // set location preferences
                         if (skill.is_virtual_only) {
                             if (virtualBox) virtualBox.checked = true;
                         } else if (skill.is_inperson_only) {
                             if (inPersonBox) inPersonBox.checked = true;
                         } else {
-                            // if neither is restricted check both
+                            // flexible means both checked
                             if (virtualBox) virtualBox.checked = true;
                             if (inPersonBox) inPersonBox.checked = true;
                         }

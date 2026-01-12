@@ -5,21 +5,21 @@
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css">
     <style>
-        /* styles for the chat interface */
+        /* main container */
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: 70vh; /* takes up 70% of screen height */
+            height: 70vh; 
             border: 1px solid #ccc;
             border-radius: 8px;
             background: #fff;
             overflow: hidden;
         }
 
-        /* area where messages scroll */
+        /* scrollable window */
         .chat-window {
             flex: 1;
-            overflow-y: auto; /* allows scrolling */
+            overflow-y: auto; 
             padding: 20px;
             background-color: #f9f9f9;
             display: flex;
@@ -37,18 +37,18 @@
             word-wrap: break-word;
         }
 
-        /* styles for messages sent by the current user */
+        /* sent messages */
         .msg-sent {
             align-self: flex-end;
-            background-color: #dcfce7; /* light green */
+            background-color: #dcfce7; 
             color: #14532d;
             border-bottom-right-radius: 2px;
         }
 
-        /* styles for messages received from the other user */
+        /* received messages */
         .msg-received {
             align-self: flex-start;
-            background-color: #e5e7eb; /* light gray */
+            background-color: #e5e7eb; 
             color: #1f2937;
             border-bottom-left-radius: 2px;
         }
@@ -61,7 +61,7 @@
             text-align: right;
         }
 
-        /* input area at the bottom */
+        /* input area */
         .chat-input-area {
             padding: 15px;
             background: #fff;
@@ -122,7 +122,7 @@
         const myUserId = '<%= user.id %>';
         let isFirstLoad = true;
 
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -130,37 +130,32 @@
             toast.textContent = message;
             container.appendChild(toast);
             
-            // trigger animation
             requestAnimationFrame(() => toast.classList.add('show'));
             
-            // remove after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // fetches conversation history from the backend
+        // fetch conversation history
         async function fetchMessages() {
             try {
                 const response = await axios.get(`/api/messages/thread/${otherUserId}`);
                 const messages = response.data.messages;
                 const chatWindow = document.getElementById('chatWindow');
 
-                // display message if chat is empty
                 if (messages.length === 0) {
                     chatWindow.innerHTML = '<p style="text-align:center; color:#ccc; margin-top:20px;">No messages yet. Say hello!</p>';
                     return;
                 }
 
-                // renders each message bubble
+                // render message list
                 chatWindow.innerHTML = messages.map(msg => {
-                    // determine if the message was sent or received
                     const isMe = (String(msg.sender_id) === String(myUserId));
                     const type = isMe ? 'msg-sent' : 'msg-received';
                     const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     
-                    // generate avatar image based on user style
                     const style = msg.sender_avatar_style || 'bottts';
                     const avatarUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${msg.sender_name}`;
                     const avatarImg = `<img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; margin: 0 10px; align-self: flex-end;">`;
@@ -177,7 +172,7 @@
                     `;
                 }).join('');
 
-                // auto-scroll to the bottom only on the first load
+                // scroll to bottom on start
                 if (isFirstLoad) {
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                     isFirstLoad = false;
@@ -188,7 +183,7 @@
             }
         }
 
-        // handles sending a new message
+        // handle form submit
         document.getElementById('chatForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const input = document.getElementById('messageText');
@@ -197,16 +192,16 @@
             if (!text.trim()) return;
 
             try {
-                // posts the message to the api
+                // send message to api
                 await axios.post('/api/messages/send', {
                     receiverId: otherUserId,
                     messageText: text
                 });
                 
-                input.value = ''; // clear input field
-                fetchMessages();  // refresh chat immediately
+                // clear input and refresh
+                input.value = ''; 
+                fetchMessages();  
                 
-                // force scroll to bottom
                 const chatWindow = document.getElementById('chatWindow');
                 setTimeout(() => chatWindow.scrollTop = chatWindow.scrollHeight, 100);
 
@@ -215,10 +210,10 @@
             }
         });
 
-        // load messages immediately
+        // initial load
         fetchMessages();
         
-        // polls for new messages every 3 seconds
+        // poll every 3 seconds
         setInterval(fetchMessages, 3000);
 
     </script>
