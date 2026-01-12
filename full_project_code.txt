@@ -51,7 +51,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import "dotenv/config";
 
-// setup for the express app and database connection
+// app and db setup
 const app = express();
 const port = process.env.PORT || 8080;
 const { Pool } = pg;
@@ -63,11 +63,11 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// configure the view engine to use ejs templates
+// view engine setup
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// configure session middleware to store logins in the database
+// session setup
 app.use(
   session({
     store: new PgSession({
@@ -84,14 +84,14 @@ app.use(
   })
 );
 
-// setup standard middleware for parsing data and logging
+// standard middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(morgan("combined"));
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
-// middleware to check if a user is logged in
+// auth middleware
 function isAuthenticated(req, res, next) {
   if (req.session.user) {
     req.user = req.session.user;
@@ -105,7 +105,7 @@ function isAuthenticated(req, res, next) {
   }
 }
 
-// middleware to check if a user is an administrator
+// admin middleware
 function isAdmin(req, res, next) {
   if (req.session.user && req.session.user.isAdmin) {
     req.user = req.session.user;
@@ -121,7 +121,7 @@ function isAdmin(req, res, next) {
   }
 }
 
-// function to create database tables if they do not exist
+// create db tables
 async function createTables() {
   const tableCreationQueries = `
         CREATE TABLE IF NOT EXISTS Users (
@@ -223,16 +223,15 @@ async function createTables() {
   }
 }
 
-// landing page route
+// landing page
 app.get("/", (req, res) => {
-  // if user is logged in send them to dashboard
   if (req.session.user) {
     return res.redirect("/dashboard");
   }
   res.render("landing");
 });
 
-// About / Tech Spec Page
+// about page
 app.get("/about", (req, res) => {
   res.render("about", {
     pageTitle: "About SkillSwap",
@@ -240,24 +239,21 @@ app.get("/about", (req, res) => {
   });
 });
 
-// dashboard route
+// dashboard
 app.get("/dashboard", async (req, res) => {
   let dbStatus = "Failed";
   let dbVersion = "Error";
 
-  // setup database tables
   const tablesReady = await createTables();
   const user = req.session.user || null;
   let topTeachers = [];
 
   if (tablesReady) {
     try {
-      // check connection
       const result = await pool.query("SELECT version()");
       dbVersion = result.rows[0].version;
       dbStatus = "Success";
 
-      // get top rated teachers
       const topTeachersRes = await pool.query(
         `SELECT u.user_id, u.user_name, u.avatar_style, COUNT(r.rating_id) as like_count
                  FROM Users u
@@ -272,22 +268,21 @@ app.get("/dashboard", async (req, res) => {
     }
   }
 
-  // render the main app view
   res.render("index", { dbStatus, dbVersion, user, topTeachers });
 });
 
-// login route fix
+// login redirect
 app.get("/login", (req, res) => {
   res.redirect("/dashboard");
 });
 
-// loads the registration page if the user is not logged in
+// register page
 app.get("/register", async (req, res) => {
   if (req.session.user) return res.redirect("/");
   res.render("register", { pageTitle: "Register", user: null });
 });
 
-// handles user registration by saving new account details to the database
+// handle registration
 app.post("/api/register", async (req, res) => {
   const {
     email,
@@ -331,7 +326,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// handles user login by verifying password and creating a session
+// handle login
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -362,7 +357,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// logs the user out by destroying the current session
+// handle logout
 app.post("/api/logout", (req, res) => {
   if (req.session)
     req.session.destroy((err) => {
@@ -372,7 +367,7 @@ app.post("/api/logout", (req, res) => {
   else res.status(200).json({ message: "No session." });
 });
 
-// renders the profile editing page and loads the master list of skills
+// edit profile page
 app.get("/profile/edit", isAuthenticated, async (req, res) => {
   try {
     const skillsResult = await pool.query(
@@ -388,39 +383,31 @@ app.get("/profile/edit", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- password reset section ---
-
-// show the forgot password form
+// forgot password page
 app.get("/forgot-password", (req, res) => {
   res.render("forgot_password");
 });
 
-// handle the form submission
+// handle forgot password
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
-
-  // create a random token
   const token =
     Math.random().toString(36).substring(2) + Date.now().toString(36);
   const oneHour = 3600000;
   const expires = Date.now() + oneHour;
 
   try {
-    // save token to db
     const result = await pool.query(
       "UPDATE Users SET reset_token = $1, reset_expires = $2 WHERE email = $3 RETURNING user_name",
       [token, expires, email]
     );
 
     if (result.rows.length > 0) {
-      // success: render the 'sent' page and pass the token for the demo button
       res.render("forgot_password_sent", {
         email: email,
         token: token,
       });
     } else {
-      // security: for this project we will just show the same page to avoid fishing
-      // but in a real app you might warn them
       res.render("forgot_password_sent", {
         email: email,
         token: null,
@@ -432,11 +419,9 @@ app.post("/forgot-password", async (req, res) => {
   }
 });
 
-// show the new password form
+// reset password page
 app.get("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
-
-  // check if token exists and is valid
   const result = await pool.query(
     "SELECT user_id FROM Users WHERE reset_token = $1 AND reset_expires > $2",
     [token, Date.now()]
@@ -449,16 +434,13 @@ app.get("/reset-password/:token", async (req, res) => {
   res.render("reset_password", { token });
 });
 
-// update the password
+// handle reset password
 app.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { newPassword } = req.body;
-
-  // hash the new password
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   try {
-    // update password and clear token
     await pool.query(
       "UPDATE Users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE reset_token = $2",
       [hashedPassword, token]
@@ -471,7 +453,7 @@ app.post("/reset-password/:token", async (req, res) => {
   }
 });
 
-// renders the public view of a user profile with skills and ratings
+// view user profile
 app.get("/profile/view/:id", isAuthenticated, async (req, res) => {
   const targetId = req.params.id;
   try {
@@ -514,7 +496,7 @@ app.get("/profile/view/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// updates the basic profile info like name and grade level
+// update basic profile info
 app.put("/api/user/profile/:id", isAuthenticated, async (req, res) => {
   if (req.user.id !== parseInt(req.params.id))
     return res.status(403).json({ message: "Access denied." });
@@ -534,7 +516,7 @@ app.put("/api/user/profile/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the current list of skills a user offers and seeks
+// get user skills
 app.get("/api/user/skills/:id", isAuthenticated, async (req, res) => {
   try {
     const offered = await pool.query(
@@ -551,7 +533,7 @@ app.get("/api/user/skills/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// updates the skills a user offers by clearing the old list and inserting new ones
+// update offered skills
 app.post("/api/user/skills/offer", isAuthenticated, async (req, res) => {
   const userId = req.user.id;
   const { skills } = req.body;
@@ -585,7 +567,7 @@ app.post("/api/user/skills/offer", isAuthenticated, async (req, res) => {
   }
 });
 
-// updates the skills a user wants to learn by clearing old ones and inserting new ones
+// update sought skills
 app.post("/api/user/skills/seek", isAuthenticated, async (req, res) => {
   const userId = req.user.id;
   const { skills } = req.body;
@@ -619,7 +601,7 @@ app.post("/api/user/skills/seek", isAuthenticated, async (req, res) => {
   }
 });
 
-// allows a user to suggest a new skill to be added to the master list
+// suggest new skill
 app.post("/api/skills/suggest", isAuthenticated, async (req, res) => {
   const { skillName, userId } = req.body;
   try {
@@ -642,11 +624,7 @@ app.post("/api/skills/suggest", isAuthenticated, async (req, res) => {
   }
 });
 
-// =================================================================
-// 3. SESSIONS & MESSAGES
-// =================================================================
-
-// loads the session request form
+// session request form
 app.get("/session/request", isAuthenticated, async (req, res) => {
   try {
     const skillsResult = await pool.query(
@@ -662,12 +640,12 @@ app.get("/session/request", isAuthenticated, async (req, res) => {
   }
 });
 
-// renders the main dashboard for managing sessions
+// my sessions page
 app.get("/my_sessions", isAuthenticated, (req, res) => {
   res.render("my_sessions", { pageTitle: "My Sessions", user: req.user });
 });
 
-// renders the rating form for a completed session
+// session rating form
 app.get("/session/rate/:id", isAuthenticated, async (req, res) => {
   try {
     const res1 = await pool.query(
@@ -689,7 +667,7 @@ app.get("/session/rate/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// finds users who teach a specific skill to populate the dropdown
+// get providers for a skill
 app.get("/api/skills/:id/providers", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
@@ -702,7 +680,7 @@ app.get("/api/skills/:id/providers", isAuthenticated, async (req, res) => {
   }
 });
 
-// creates a new session request
+// create session request
 app.post("/api/sessions/request", isAuthenticated, async (req, res) => {
   const requesterId = req.user.id;
   const {
@@ -736,18 +714,18 @@ app.post("/api/sessions/request", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the full history of sessions for a user
+// get session history
 app.get("/api/sessions/user/:id", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT s.*, p.user_name AS provider_name, r.user_name AS requester_name, sk.skill_name AS skill_name,
-            (CASE WHEN rt.rating_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_rated
-            FROM Sessions s
-            JOIN Users p ON s.provider_id = p.user_id 
-            JOIN Users r ON s.requester_id = r.user_id 
-            JOIN Skills sk ON s.skill_taught_id = sk.skill_id
-            LEFT JOIN Ratings rt ON s.session_id = rt.session_id
-            WHERE s.provider_id = $1 OR s.requester_id = $1 ORDER BY s.session_date_time DESC`,
+             (CASE WHEN rt.rating_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_rated
+             FROM Sessions s
+             JOIN Users p ON s.provider_id = p.user_id 
+             JOIN Users r ON s.requester_id = r.user_id 
+             JOIN Skills sk ON s.skill_taught_id = sk.skill_id
+             LEFT JOIN Ratings rt ON s.session_id = rt.session_id
+             WHERE s.provider_id = $1 OR s.requester_id = $1 ORDER BY s.session_date_time DESC`,
       [req.params.id]
     );
     res.status(200).json({ sessions: result.rows });
@@ -756,7 +734,7 @@ app.get("/api/sessions/user/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// allows a provider to confirm a session request
+// confirm session
 app.post("/api/sessions/confirm", isAuthenticated, async (req, res) => {
   const { sessionId, meetingUrl } = req.body;
   try {
@@ -772,7 +750,7 @@ app.post("/api/sessions/confirm", isAuthenticated, async (req, res) => {
   }
 });
 
-// allows a user to deny or cancel a session
+// deny or cancel session
 app.post("/api/sessions/deny", isAuthenticated, async (req, res) => {
   const { sessionId, reason } = req.body;
   try {
@@ -795,7 +773,7 @@ app.post("/api/sessions/deny", isAuthenticated, async (req, res) => {
   }
 });
 
-// marks a confirmed session as complete
+// complete session
 app.post("/api/sessions/complete", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
@@ -810,7 +788,7 @@ app.post("/api/sessions/complete", isAuthenticated, async (req, res) => {
   }
 });
 
-// submits a rating for a completed session
+// rate session
 app.post("/api/sessions/rate", isAuthenticated, async (req, res) => {
   const { sessionId, raterId, rateeId, likeStatus, feedbackText } = req.body;
   if (parseInt(raterId) === parseInt(rateeId))
@@ -828,12 +806,12 @@ app.post("/api/sessions/rate", isAuthenticated, async (req, res) => {
   }
 });
 
-// renders the inbox view
+// inbox page
 app.get("/messages", isAuthenticated, (req, res) =>
   res.render("inbox", { pageTitle: "My Inbox", user: req.user })
 );
 
-// renders the chat view with a specific user
+// chat page
 app.get("/messages/:id", isAuthenticated, async (req, res) => {
   try {
     const u = await pool.query(
@@ -851,7 +829,7 @@ app.get("/messages/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the list of recent conversations
+// get inbox conversations
 app.get("/api/messages/inbox", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(
@@ -869,7 +847,7 @@ app.get("/api/messages/inbox", isAuthenticated, async (req, res) => {
   }
 });
 
-// fetches the message history between two users
+// get message history
 app.get(
   "/api/messages/thread/:otherUserId",
   isAuthenticated,
@@ -889,7 +867,7 @@ app.get(
   }
 );
 
-// sends a new message to another user
+// send message
 app.post("/api/messages/send", isAuthenticated, async (req, res) => {
   try {
     await pool.query(
@@ -902,16 +880,12 @@ app.post("/api/messages/send", isAuthenticated, async (req, res) => {
   }
 });
 
-// =================================================================
-// 4. ADMIN PANEL (Protected)
-// =================================================================
-
-// renders the main admin dashboard
+// admin dashboard
 app.get("/admin", isAdmin, (req, res) => {
   res.render("admin_dashboard", { pageTitle: "Admin Panel", user: req.user });
 });
 
-// fetches a list of all users for the admin panel
+// get all users (admin)
 app.get("/api/admin/users", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -923,7 +897,7 @@ app.get("/api/admin/users", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to promote or demote a user
+// toggle user role (admin)
 app.post("/api/admin/users/:id/toggle_role", isAdmin, async (req, res) => {
   const targetId = parseInt(req.params.id);
   if (targetId === 1)
@@ -951,7 +925,7 @@ app.post("/api/admin/users/:id/toggle_role", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to delete a user account
+// delete user (admin)
 app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
   const targetId = parseInt(req.params.id);
   if (targetId === 1)
@@ -974,7 +948,7 @@ app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
   }
 });
 
-// fetches all security reports for review
+// get reports (admin)
 app.get("/api/admin/reports", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -987,7 +961,7 @@ app.get("/api/admin/reports", isAdmin, async (req, res) => {
   }
 });
 
-// updates the status of a security report
+// update report status (admin)
 app.post("/api/admin/report/:id/status", isAdmin, async (req, res) => {
   try {
     await pool.query(
@@ -1004,7 +978,7 @@ app.post("/api/admin/report/:id/status", isAdmin, async (req, res) => {
   }
 });
 
-// allows a user to submit a security report against another user
+// submit user report
 app.post("/api/reports", isAuthenticated, async (req, res) => {
   try {
     await pool.query(
@@ -1017,7 +991,7 @@ app.post("/api/reports", isAuthenticated, async (req, res) => {
   }
 });
 
-//  fetches the system audit trail
+// get audit logs (admin)
 app.get("/api/admin/logs", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -1033,7 +1007,7 @@ app.get("/api/admin/logs", isAdmin, async (req, res) => {
   }
 });
 
-// fetches pending skill suggestions for admin review
+// get skill suggestions (admin)
 app.get("/api/admin/suggestions", isAdmin, async (req, res) => {
   try {
     const res1 = await pool.query(
@@ -1045,7 +1019,7 @@ app.get("/api/admin/suggestions", isAdmin, async (req, res) => {
   }
 });
 
-// approves or rejects a suggested skill
+// approve/reject skill suggestion (admin)
 app.post("/api/admin/suggestions/action", isAdmin, async (req, res) => {
   const { suggestionId, action } = req.body;
   const client = await pool.connect();
@@ -1085,7 +1059,7 @@ app.post("/api/admin/suggestions/action", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to manually add a new skill
+// create skill manually (admin)
 app.post("/api/skills", isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -1102,7 +1076,7 @@ app.post("/api/skills", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to rename an existing skill
+// update skill name (admin)
 app.put("/api/skills/:id", isAdmin, async (req, res) => {
   try {
     await pool.query("UPDATE Skills SET skill_name = $1 WHERE skill_id = $2", [
@@ -1119,7 +1093,7 @@ app.put("/api/skills/:id", isAdmin, async (req, res) => {
   }
 });
 
-// allows an admin to delete a skill
+// delete skill (admin)
 app.delete("/api/skills/:id", isAdmin, async (req, res) => {
   try {
     await pool.query("DELETE FROM Skills WHERE skill_id = $1", [req.params.id]);
@@ -1133,7 +1107,7 @@ app.delete("/api/skills/:id", isAdmin, async (req, res) => {
   }
 });
 
-// searches for users or skills matching a query
+// global search
 app.get("/api/search", isAuthenticated, async (req, res) => {
   const q = req.query.q;
   if (!q || q.length < 2) return res.json({ results: [] });
@@ -1150,11 +1124,10 @@ app.get("/api/search", isAuthenticated, async (req, res) => {
   }
 });
 
-// starts the server on the specified port
+// start server
 app.listen(port, "0.0.0.0", () =>
   console.log(`Server is running on port ${port}`)
 );
-
 
 /* ==========================================================================
    FILE: package.json
@@ -1558,7 +1531,7 @@ const pool = new Pool({
 });
 
 // --- CONFIGURATION ---
-const USERS_TO_CREATE = 20;
+const USERS_TO_CREATE = 19;
 const DEFAULT_PASSWORD = "password123"; // Simple password for all fake users
 
 // --- DATA ARRAYS ---
@@ -1826,8 +1799,10 @@ seedDatabase();
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>About - SkillSwap</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css" />
     <style>
+      /* local styles */
       .about-section {
         background: white;
         padding: 30px;
@@ -1870,13 +1845,9 @@ seedDatabase();
       <div class="about-section">
         <h2>Our Mission</h2>
         <p>
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-          minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-          aliquip ex ea commodo consequat. Duis aute irure dolor in
-          reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-          pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-          culpa qui officia deserunt mollit anim id est laborum."
+          Our mission is to provide students of all ages with an intuitive, effective, and safe platform to exchange knowledge. With SkillSwap, finding a tutor has never been easier or faster.<br>
+          <p><br></p>
+          SkillSwap is developed by students, for students, using feedback from peers and friends to create an excellent learning resource.
         </p>
       </div>
 
@@ -1922,7 +1893,6 @@ seedDatabase();
   </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\admin_dashboard.ejs
    ========================================================================== */
@@ -1931,8 +1901,10 @@ seedDatabase();
 <html>
   <head>
     <title><%= pageTitle %></title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css" />
     <style>
+      /* admin styles */
       .admin-section {
         margin-bottom: 40px;
         border: 1px solid #ddd;
@@ -1970,10 +1942,10 @@ seedDatabase();
       }
       .btn-promote {
         background-color: #3b82f6;
-      } /* Blue */
+      }
       .btn-demote {
         background-color: #f59e0b;
-      } /* Amber */
+      }
       body {
         background-image: url("/images/background_admin.png") !important;
         background-attachment: fixed !important;
@@ -2091,6 +2063,7 @@ seedDatabase();
           </table>
         </div>
       </section>
+      
       <div class="admin-section">
         <h2>1. Pending Skill Suggestions</h2>
         <p>Review skills suggested by users.</p>
@@ -2171,7 +2144,7 @@ seedDatabase();
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      // helper function to show toast notifications
+      // toast notifications
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -2185,7 +2158,7 @@ seedDatabase();
         }, 3000);
       }
 
-      // load all data tables when the page loads
+      // load initial data
       document.addEventListener("DOMContentLoaded", () => {
         fetchSuggestions();
         fetchReports();
@@ -2193,7 +2166,7 @@ seedDatabase();
         fetchLogs();
       });
 
-      // fetches pending skill suggestions from the api
+      // get pending suggestions
       async function fetchSuggestions() {
         const tbody = document.getElementById("suggestionsBody");
         try {
@@ -2228,7 +2201,7 @@ seedDatabase();
         }
       }
 
-      // sends approval or rejection for a skill suggestion
+      // approve or reject suggestion
       async function processSuggestion(id, action) {
         try {
           await axios.post("/api/admin/suggestions/action", {
@@ -2242,7 +2215,7 @@ seedDatabase();
         }
       }
 
-      // fetches all security reports from the api
+      // get security reports
       async function fetchReports() {
         const tbody = document.getElementById("reportsBody");
         try {
@@ -2277,7 +2250,7 @@ seedDatabase();
         }
       }
 
-      // updates the status of a specific security report
+      // update report status
       async function updateReportStatus(id, newStatus) {
         if (!newStatus) return;
         try {
@@ -2291,7 +2264,7 @@ seedDatabase();
         }
       }
 
-      // fetches the list of all users from the api
+      // get all users
       async function fetchUsers() {
         const tbody = document.getElementById("usersBody");
         try {
@@ -2303,7 +2276,7 @@ seedDatabase();
             const isRootAdmin = u.user_id === 1;
             const isMe = u.user_id == "<%= user.id %>";
 
-            // visual protection for root admin and current user
+            // protect root admin and self
             if (isRootAdmin) {
               actions =
                 '<span style="color:#d97706; font-weight:bold; border:1px solid #d97706; padding:2px 6px; border-radius:4px;">ROOT ADMIN</span>';
@@ -2335,7 +2308,7 @@ seedDatabase();
         }
       }
 
-      // promotes or demotes a user's admin status
+      // toggle admin role
       async function toggleAdmin(id) {
         if (!confirm(`Change Admin status for User ID ${id}?`)) return;
         try {
@@ -2350,7 +2323,7 @@ seedDatabase();
         }
       }
 
-      // permanently deletes a user account
+      // delete user
       async function deleteUser(id) {
         if (
           !confirm(`Permanently DELETE User ID ${id}? This cannot be undone.`)
@@ -2365,7 +2338,7 @@ seedDatabase();
         }
       }
 
-      // handles manual skill addition by the admin
+      // add manual skill
       document
         .getElementById("addSkillForm")
         .addEventListener("submit", async (e) => {
@@ -2380,7 +2353,7 @@ seedDatabase();
           }
         });
 
-      // function to fetch and display audit logs
+      // get system logs
       async function fetchLogs() {
         const tbody = document.getElementById("logsBody");
 
@@ -2394,10 +2367,9 @@ seedDatabase();
             return;
           }
 
-          tbody.innerHTML = ""; // clear loading message
+          tbody.innerHTML = ""; 
 
           logs.forEach((log) => {
-            // format date (e.g., "12/9/2025, 1:53 PM")
             const dateStr = new Date(log.timestamp).toLocaleString();
 
             const row = `
@@ -2424,7 +2396,6 @@ seedDatabase();
   </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\chat.ejs
    ========================================================================== */
@@ -2433,23 +2404,24 @@ seedDatabase();
 <html>
 <head>
     <title><%= pageTitle %></title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css">
     <style>
-        /* styles for the chat interface */
+        /* main container */
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: 70vh; /* takes up 70% of screen height */
+            height: 70vh; 
             border: 1px solid #ccc;
             border-radius: 8px;
             background: #fff;
             overflow: hidden;
         }
 
-        /* area where messages scroll */
+        /* scrollable window */
         .chat-window {
             flex: 1;
-            overflow-y: auto; /* allows scrolling */
+            overflow-y: auto; 
             padding: 20px;
             background-color: #f9f9f9;
             display: flex;
@@ -2467,18 +2439,18 @@ seedDatabase();
             word-wrap: break-word;
         }
 
-        /* styles for messages sent by the current user */
+        /* sent messages */
         .msg-sent {
             align-self: flex-end;
-            background-color: #dcfce7; /* light green */
+            background-color: #dcfce7; 
             color: #14532d;
             border-bottom-right-radius: 2px;
         }
 
-        /* styles for messages received from the other user */
+        /* received messages */
         .msg-received {
             align-self: flex-start;
-            background-color: #e5e7eb; /* light gray */
+            background-color: #e5e7eb; 
             color: #1f2937;
             border-bottom-left-radius: 2px;
         }
@@ -2491,7 +2463,7 @@ seedDatabase();
             text-align: right;
         }
 
-        /* input area at the bottom */
+        /* input area */
         .chat-input-area {
             padding: 15px;
             background: #fff;
@@ -2552,7 +2524,7 @@ seedDatabase();
         const myUserId = '<%= user.id %>';
         let isFirstLoad = true;
 
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -2560,37 +2532,32 @@ seedDatabase();
             toast.textContent = message;
             container.appendChild(toast);
             
-            // trigger animation
             requestAnimationFrame(() => toast.classList.add('show'));
             
-            // remove after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // fetches conversation history from the backend
+        // fetch conversation history
         async function fetchMessages() {
             try {
                 const response = await axios.get(`/api/messages/thread/${otherUserId}`);
                 const messages = response.data.messages;
                 const chatWindow = document.getElementById('chatWindow');
 
-                // display message if chat is empty
                 if (messages.length === 0) {
                     chatWindow.innerHTML = '<p style="text-align:center; color:#ccc; margin-top:20px;">No messages yet. Say hello!</p>';
                     return;
                 }
 
-                // renders each message bubble
+                // render message list
                 chatWindow.innerHTML = messages.map(msg => {
-                    // determine if the message was sent or received
                     const isMe = (String(msg.sender_id) === String(myUserId));
                     const type = isMe ? 'msg-sent' : 'msg-received';
                     const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     
-                    // generate avatar image based on user style
                     const style = msg.sender_avatar_style || 'bottts';
                     const avatarUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${msg.sender_name}`;
                     const avatarImg = `<img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; margin: 0 10px; align-self: flex-end;">`;
@@ -2607,7 +2574,7 @@ seedDatabase();
                     `;
                 }).join('');
 
-                // auto-scroll to the bottom only on the first load
+                // scroll to bottom on start
                 if (isFirstLoad) {
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                     isFirstLoad = false;
@@ -2618,7 +2585,7 @@ seedDatabase();
             }
         }
 
-        // handles sending a new message
+        // handle form submit
         document.getElementById('chatForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const input = document.getElementById('messageText');
@@ -2627,16 +2594,16 @@ seedDatabase();
             if (!text.trim()) return;
 
             try {
-                // posts the message to the api
+                // send message to api
                 await axios.post('/api/messages/send', {
                     receiverId: otherUserId,
                     messageText: text
                 });
                 
-                input.value = ''; // clear input field
-                fetchMessages();  // refresh chat immediately
+                // clear input and refresh
+                input.value = ''; 
+                fetchMessages();  
                 
-                // force scroll to bottom
                 const chatWindow = document.getElementById('chatWindow');
                 setTimeout(() => chatWindow.scrollTop = chatWindow.scrollHeight, 100);
 
@@ -2645,10 +2612,10 @@ seedDatabase();
             }
         });
 
-        // load messages immediately
+        // initial load
         fetchMessages();
         
-        // polls for new messages every 3 seconds
+        // poll every 3 seconds
         setInterval(fetchMessages, 3000);
 
     </script>
@@ -2665,6 +2632,7 @@ seedDatabase();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password - SkillSwap</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css">
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh; background-color: #f9fafb;">
@@ -2696,7 +2664,6 @@ seedDatabase();
 </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\forgot_password_sent.ejs
    ========================================================================== */
@@ -2707,6 +2674,7 @@ seedDatabase();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Check Your Email - SkillSwap</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css">
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh; background-color: #f9fafb;">
@@ -2761,7 +2729,6 @@ seedDatabase();
 </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\inbox.ejs
    ========================================================================== */
@@ -2770,12 +2737,13 @@ seedDatabase();
 <html>
 <head>
     <title><%= pageTitle %></title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css">
     <style>
-        /* styles for the list of conversations */
+        /* conversation list styles */
         .inbox-list { list-style: none; padding: 0; }
         
-        /* individual conversation row styling */
+        /* row styles */
         .inbox-item { 
             display: flex; justify-content: space-between; align-items: center;
             background: white; border: 1px solid #eee; 
@@ -2784,7 +2752,7 @@ seedDatabase();
         }
         .inbox-item:hover { background: #f9fafb; border-color: #ccc; }
         
-        /* styling for names and message previews */
+        /* text styles */
         .inbox-name { font-weight: bold; font-size: 1.1em; color: #ea5455cc; }
         .inbox-preview { color: #666; font-size: 0.9em; margin-top: 5px; }
         .inbox-time { font-size: 0.8em; color: #999; white-space: nowrap; }
@@ -2807,7 +2775,7 @@ seedDatabase();
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -2815,40 +2783,40 @@ seedDatabase();
             toast.textContent = message;
             container.appendChild(toast);
             
-            // triggers the slide in animation
+            // animate in
             requestAnimationFrame(() => toast.classList.add('show'));
             
-            // removes the toast after 3 seconds
+            // remove after delay
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // load conversations when the page finishes loading
+        // load conversations
         document.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('inboxList');
             const loading = document.getElementById('loadingMsg');
 
             try {
-                // fetch the list of active conversations from the api
+                // fetch messages
                 const response = await axios.get('/api/messages/inbox');
                 const conversations = response.data.conversations;
 
-                // hide the loading text once data is received
+                // hide loader
                 loading.style.display = 'none';
 
-                // show a message if the inbox is empty
+                // handle empty inbox
                 if (conversations.length === 0) {
                     list.innerHTML = '<p>No messages yet.</p>';
                     return;
                 }
 
-                // loop through each conversation and create a list item
+                // render list
                 conversations.forEach(convo => {
                     const time = new Date(convo.timestamp).toLocaleDateString() + ' ' + new Date(convo.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     
-                    // build the html for the conversation row
+                    // create html row
                     const item = `
                         <a href="/messages/${convo.other_user_id}" class="inbox-item">
                             <div>
@@ -2871,7 +2839,6 @@ seedDatabase();
 </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\index.ejs
    ========================================================================== */
@@ -2880,6 +2847,7 @@ seedDatabase();
 <html>
   <head>
     <title>SkillSwap - <%= user ? 'Dashboard' : 'Login' %></title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css" />
   </head>
   <body>
@@ -2962,7 +2930,7 @@ seedDatabase();
 
       <% if (typeof topTeachers !== 'undefined' && topTeachers.length > 0) { %>
       <div style="margin-top: 40px">
-        <h2>🏆 Top Rated Teachers</h2>
+        <h2>🏆 Top Rated Tutors</h2>
         <p style="color: #666; margin-bottom: 15px">
           Community favorites based on student feedback.
         </p>
@@ -3027,7 +2995,9 @@ seedDatabase();
           <% }) %>
         </div>
       </div>
-      <% } %> <% } else { %>
+      <% } %> 
+      
+      <% } else { %>
 
       <div
         style="
@@ -3095,16 +3065,16 @@ seedDatabase();
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
-      // client-side javascript logic
       const messageArea = document.getElementById("messageArea");
 
-      // logic runs only if the login form exists which means the user is not logged in
+      // attach login listener if form exists
       if (document.getElementById("loginForm")) {
         document
           .getElementById("loginForm")
           .addEventListener("submit", handleLoginSubmit);
       }
 
+      // handle login submit
       async function handleLoginSubmit(event) {
         event.preventDefault();
 
@@ -3113,7 +3083,6 @@ seedDatabase();
         messageArea.textContent = "";
 
         try {
-          // axios post request to the express api
           const response = await axios.post("/api/login", {
             email: email,
             password: password,
@@ -3122,8 +3091,6 @@ seedDatabase();
           if (response.status === 200) {
             messageArea.textContent = "Login Successful! Redirecting...";
             messageArea.style.color = "green";
-
-            // on success reload the page to load the authenticated dashboard view
             window.location.href = "/";
           }
         } catch (error) {
@@ -3138,7 +3105,7 @@ seedDatabase();
         }
       }
 
-      // search bar logic which only runs if the search input exists
+      // real-time search logic
       const searchInput = document.getElementById("searchInput");
       const resultsBox = document.getElementById("searchResults");
 
@@ -3146,7 +3113,7 @@ seedDatabase();
         let timeout = null;
 
         searchInput.addEventListener("input", (e) => {
-          // debounce clears the previous timer so we do not spam the server
+          // prevent spamming api while typing
           clearTimeout(timeout);
           const query = e.target.value.trim();
 
@@ -3155,7 +3122,7 @@ seedDatabase();
             return;
           }
 
-          // waits 300ms after the user stops typing to send the request
+          // fetch results after delay
           timeout = setTimeout(async () => {
             try {
               const response = await axios.get(
@@ -3197,7 +3164,7 @@ seedDatabase();
           }, 300);
         });
 
-        // hides the dropdown if the user clicks anywhere else on the page
+        // close search results on outside click
         document.addEventListener("click", (e) => {
           if (
             !searchInput.contains(e.target) &&
@@ -3211,7 +3178,6 @@ seedDatabase();
   </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\landing.ejs
    ========================================================================== */
@@ -3222,11 +3188,11 @@ seedDatabase();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to SkillSwap</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/styles/main.css">
     
     <style>
-        /* Forces the body to be WHITE behind everything */
-        /* This hides the gray gap by making it blend with the footer */
+        /* global layout styles */
         body {
             margin: 0;
             padding: 0;
@@ -3234,22 +3200,22 @@ seedDatabase();
             background-color: white !important; 
         }
 
-        /* High contrast override (keeps your existing behavior) */
+        /* high contrast accessibility */
         body.high-contrast-mode nav,
         body.high-contrast-mode .navbar {
             background: #000 !important;
             border-bottom: 2px solid yellow;
         }
 
-        /* Navbar: reduced height and persistent 2px yellow bottom border */
+        /* navbar layout */
         .navbar {
             background: #2D4059;
-            padding: 0.5rem 1.5rem; /* smaller vertical padding to shrink navbar */
+            padding: 0.5rem 1.5rem; 
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid #FFD460; /* 2px yellow border */
+            border-bottom: 2px solid #FFD460; 
             box-sizing: border-box;
         }
 
@@ -3269,16 +3235,13 @@ seedDatabase();
             border-radius: 4px;
         }
 
-        /* The gradient lives here now (Blue top, stops at footer) */
+        /* full width hero section */
         .landing-hero {
             width: 100%;
             max-width: none !important;
             margin: 0 !important;
             border-radius: 0 !important;
-            
-            /* This forces the blue section to stretch and fill all available space */
             flex: 1; 
-            
             display: flex;
             align-items: center;
             justify-content: center;
@@ -3287,7 +3250,7 @@ seedDatabase();
             padding: 20px;
         }
 
-        /* Ensure footer stays white and sits on top */
+        /* footer z-index fix */
         footer {
             background: #2D4059 !important;
             position: relative;
@@ -3295,7 +3258,7 @@ seedDatabase();
             margin-top: 0 !important;
         }
 
-        /* CTA styles */
+        /* button styles */
         .cta-primary {
             background: #EA5455;
             color: white;
@@ -3357,7 +3320,6 @@ seedDatabase();
 </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\my_sessions.ejs
    ========================================================================== */
@@ -3367,8 +3329,9 @@ seedDatabase();
   <head>
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
-      /* styles for the dashboard table */
+      /* table styles */
       table {
         width: 100%;
         border-collapse: collapse;
@@ -3384,24 +3347,24 @@ seedDatabase();
         background-color: #f4f4f4;
       }
 
-      /* status color coding */
+      /* status colors */
       .status-requested {
         color: #d97706;
         font-weight: bold;
-      } /* amber */
+      }
       .status-confirmed {
         color: #059669;
         font-weight: bold;
-      } /* green */
+      }
       .status-denied,
       .status-cancelled {
         color: #dc2626;
-      } /* red */
+      }
       .status-completed {
         color: #2563eb;
-      } /* blue */
+      }
 
-      /* action buttons styling */
+      /* button styles */
       .btn-action {
         padding: 5px 10px;
         font-size: 0.9em;
@@ -3467,27 +3430,23 @@ seedDatabase();
     <%- include('partials/footer') %>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      // global flag to prevent multiple clicks
+      // prevent double clicks
       window.isProcessing = false;
 
-      // helper function to show toast notifications
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
 
-        // create the toast element
         const toast = document.createElement("div");
         toast.className = `toast toast-${type}`;
         toast.textContent = message;
 
-        // add to dom
         container.appendChild(toast);
 
-        // trigger animation
         requestAnimationFrame(() => {
           toast.classList.add("show");
         });
 
-        // remove after 3 seconds
         setTimeout(() => {
           toast.classList.remove("show");
           setTimeout(() => {
@@ -3496,15 +3455,15 @@ seedDatabase();
         }, 3000);
       }
 
-      // current user id from server session
+      // get current user id
       const currentUserId = "<%= user.id %>";
 
-      // fetch sessions when the page loads
+      // load sessions on start
       document.addEventListener("DOMContentLoaded", fetchSessions);
 
       async function fetchSessions() {
         try {
-          // calls the backend api to get the user's session history
+          // fetch session history
           const response = await axios.get(
             `/api/sessions/user/${currentUserId}`
           );
@@ -3513,7 +3472,7 @@ seedDatabase();
           const tbody = document.getElementById("sessionsBody");
           tbody.innerHTML = "";
 
-          // display empty state if no sessions exist
+          // handle empty state
           if (sessions.length === 0) {
             document.getElementById("loadingMsg").innerHTML = `
                         <div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
@@ -3527,12 +3486,11 @@ seedDatabase();
             return;
           }
 
-          // loop through each session to create table rows
+          // create table rows
           sessions.forEach((session) => {
             const row = document.createElement("tr");
 
-            // determines if the current user is the teacher or student
-            // converts ids to strings to avoid type mismatches
+            // check user role
             const isTeacher =
               String(currentUserId) === String(session.provider_id);
             const myRole = isTeacher ? "Teacher" : "Student";
@@ -3543,26 +3501,26 @@ seedDatabase();
               ? session.requester_id
               : session.provider_id;
 
-            // formats the date for display
+            // format date
             const dateObj = new Date(session.session_date_time);
             const dateStr = dateObj.toLocaleString();
 
             let actionsHtml = "";
 
-            // logic for displaying buttons based on session status
+            // generate action buttons based on status
             if (session.status === "Requested") {
               if (isTeacher) {
-                // teacher can confirm or deny
+                // teacher options
                 actionsHtml = `
                                 <button class="btn-action" onclick="confirmSession(${session.session_id}, '${session.location_type}')">Confirm</button>
                                 <button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Deny</button>
                             `;
               } else {
-                // student can cancel
+                // student options
                 actionsHtml = `<button class="btn-action btn-danger" onclick="denySession(${session.session_id})">Cancel Request</button>`;
               }
             } else if (session.status === "Confirmed") {
-              // show meet link if online
+              // show meet link
               if (session.location_type === "Online" && session.meeting_url) {
                 actionsHtml += `<a href="${session.meeting_url}" target="_blank" style="font-weight:bold;">🎥 Join Meeting</a><br><br>`;
               } else if (session.location_type === "In-Person") {
@@ -3570,15 +3528,12 @@ seedDatabase();
               }
 
               if (isTeacher) {
-                // teacher can mark complete
                 actionsHtml += `<button class="btn-action" onclick="completeSession(${session.session_id})">Mark Complete</button>`;
               } else {
-                // student just waits
                 actionsHtml += `<span style="font-size:0.8em; color:gray;">Waiting for teacher to complete</span>`;
               }
             } else if (session.status === "Completed") {
               if (!isTeacher) {
-                // student view check if already rated
                 if (session.is_rated) {
                   actionsHtml =
                     '<span style="color:#059669; font-weight:bold;">✓ Rated</span>';
@@ -3586,11 +3541,9 @@ seedDatabase();
                   actionsHtml = `<a href="/session/rate/${session.session_id}" class="btn-action">Rate Teacher</a>`;
                 }
               } else {
-                // teacher view
                 actionsHtml = "<span>✅ Complete</span>";
               }
             } else {
-              // denied or cancelled state
               actionsHtml = "<span>---</span>";
             }
 
@@ -3620,24 +3573,21 @@ seedDatabase();
         }
       }
 
-      // function to confirm a session
+      // confirm session
       async function confirmSession(id, locationType) {
-        // check lock to prevent double clicks
+        // check lock
         if (window.isProcessing) return;
-
-        // set lock
         window.isProcessing = true;
 
         let meetUrl = null;
 
-        // handle url prompt for online sessions
+        // handle meeting url
         if (locationType === "Online") {
           meetUrl = prompt(
             "Please enter the Video Call Link (e.g., Zoom, Google Meet) for this session:"
           );
 
           if (meetUrl === null) {
-            // unlock if cancelled
             window.isProcessing = false;
             return;
           }
@@ -3655,18 +3605,17 @@ seedDatabase();
           const msg = err.response?.data?.message || "Error confirming session";
           showToast(msg, "error");
         } finally {
-          // release lock
           window.isProcessing = false;
         }
       }
 
-      // function to deny or cancel a session
+      // deny or cancel session
       async function denySession(id) {
         if (window.isProcessing) return;
         window.isProcessing = true;
 
         if (!confirm("Are you sure you want to cancel/deny this session?")) {
-          window.isProcessing = false; // unlock
+          window.isProcessing = false;
           return;
         }
 
@@ -3686,13 +3635,13 @@ seedDatabase();
         }
       }
 
-      // function to mark a session as complete
+      // complete session
       async function completeSession(id) {
         if (window.isProcessing) return;
         window.isProcessing = true;
 
         if (!confirm("Mark this session as fully completed?")) {
-          window.isProcessing = false; // unlock
+          window.isProcessing = false;
           return;
         }
 
@@ -3712,18 +3661,17 @@ seedDatabase();
   </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\partials\footer.ejs
    ========================================================================== */
 
 <style>
-  /* Footer-specific styles to keep it clean */
+  /* footer styles */
   .site-footer {
     background-color: #2d4059;
     border-top: 1px solid var(--border-color);
     padding: 40px 20px;
-    margin-top: 60px; /* Push it away from content */
+    margin-top: 60px; /* content spacing */
     text-align: center;
     color: white;
     font-size: 0.9em;
@@ -3790,7 +3738,6 @@ seedDatabase();
     </p>
   </div>
 </footer>
-
 
 /* ==========================================================================
    FILE: views\partials\navbar.ejs
@@ -3929,6 +3876,7 @@ seedDatabase();
 </nav>
 
 <style>
+  /* menu styles */
   .menu-item {
     display: block;
     padding: 10px 15px;
@@ -3941,6 +3889,7 @@ seedDatabase();
     background: #f3f4f6;
   }
 
+  /* accessibility styles */
   body.high-contrast-mode {
     filter: contrast(1.5) saturate(0.8);
     background-color: #fff !important;
@@ -3957,11 +3906,13 @@ seedDatabase();
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
+  // toggle dropdown visibility
   function toggleUserMenu() {
     const menu = document.getElementById("userDropdown");
     menu.style.display = menu.style.display === "block" ? "none" : "block";
   }
 
+  // close menu on outside click
   document.addEventListener("click", function (event) {
     const dropdown = document.getElementById("userDropdown");
     const trigger = event.target.closest('[onclick="toggleUserMenu()"]');
@@ -3972,6 +3923,7 @@ seedDatabase();
     }
   });
 
+  // handle logout
   async function handleLogout() {
     if (!confirm("Are you sure you want to log out?")) return;
     try {
@@ -3983,6 +3935,7 @@ seedDatabase();
     }
   }
 
+  // toggle high contrast mode
   function toggleColorblind() {
     const body = document.body;
     const checkbox = document.getElementById("cbToggle");
@@ -3993,6 +3946,7 @@ seedDatabase();
     localStorage.setItem("colorblindMode", isEnabled);
   }
 
+  // load saved preference
   document.addEventListener("DOMContentLoaded", () => {
     const isEnabled = localStorage.getItem("colorblindMode") === "true";
     if (isEnabled) {
@@ -4003,7 +3957,6 @@ seedDatabase();
   });
 </script>
 
-
 /* ==========================================================================
    FILE: views\profile_edit.ejs
    ========================================================================== */
@@ -4013,10 +3966,11 @@ seedDatabase();
 <head>
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
-        /* ADDED: Hover effect to help users track rows */
+        /* row hover effect */
         tr:hover {
-            background-color: #f3f4f6; /* Light gray highlight on hover */
+            background-color: #f3f4f6; 
         }
     </style>
 </head>
@@ -4076,10 +4030,10 @@ seedDatabase();
                             <tr style="border-bottom: 1px solid #b0b0b0; vertical-align: middle;">
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="skill-toggle" 
-                                        data-id="<%= skill.skill_id %>"
-                                        id="skill_<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="skill-toggle" 
+                                           data-id="<%= skill.skill_id %>"
+                                           id="skill_<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                                 
                                 <td style="vertical-align: middle;">
@@ -4126,10 +4080,10 @@ seedDatabase();
                             <tr style="border-bottom: 1px solid #b0b0b0; vertical-align: middle;">
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="seek-toggle" 
-                                        data-id="<%= skill.skill_id %>"
-                                        id="seek_skill_<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="seek-toggle" 
+                                           data-id="<%= skill.skill_id %>"
+                                           id="seek_skill_<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                                 
                                 <td style="vertical-align: middle;">
@@ -4138,15 +4092,15 @@ seedDatabase();
 
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="seek-virtual" 
-                                        data-id="<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="seek-virtual" 
+                                           data-id="<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                                 <td style="text-align: center; vertical-align: middle;">
                                     <input type="checkbox" 
-                                        class="seek-inperson" 
-                                        data-id="<%= skill.skill_id %>"
-                                        style="margin: 0; vertical-align: middle;">
+                                           class="seek-inperson" 
+                                           data-id="<%= skill.skill_id %>"
+                                           style="margin: 0; vertical-align: middle;">
                                 </td>
                             </tr>
                         <% }) %>
@@ -4170,11 +4124,9 @@ seedDatabase();
     
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // --- Client-Side JavaScript Logic ---
-        
-        const userId = '<%= user.id %>'; // pass the user's id for api submissions
+        const userId = '<%= user.id %>';
 
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -4188,24 +4140,21 @@ seedDatabase();
             }, 3000);
         }
 
-        // 1. logic for saving skills offered
+        // handle offered skills submit
         document.getElementById('skillOfferForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const skillsToSubmit = [];
-            
-            // iterate over all the master checkboxes to find selected skills
             const skillCheckboxes = document.querySelectorAll('.skill-toggle');
 
             skillCheckboxes.forEach(checkbox => {
                 if (checkbox.checked) {
                     const id = checkbox.getAttribute('data-id');
                     
-                    // find the corresponding location checkboxes for this skill id
+                    // check location preferences
                     const canDoVirtual = document.querySelector(`.loc-virtual[data-id="${id}"]`).checked;
                     const canDoInPerson = document.querySelector(`.loc-inperson[data-id="${id}"]`).checked;
 
-                    // translation logic converts ui choices to database flags
                     let isVirtualOnly = false;
                     let isInPersonOnly = false;
 
@@ -4214,7 +4163,6 @@ seedDatabase();
                     } else if (!canDoVirtual && canDoInPerson) {
                         isInPersonOnly = true;
                     } 
-                    // if both are checked, both flags remain false meaning flexible
 
                     skillsToSubmit.push({
                         skillId: id,
@@ -4225,7 +4173,7 @@ seedDatabase();
             });
 
             try {
-                // sends the array of selected skills to the backend
+                // send data to api
                 const response = await axios.post('/api/user/skills/offer', {
                     userId: userId, 
                     skills: skillsToSubmit
@@ -4237,13 +4185,11 @@ seedDatabase();
             }
         });
 
-        // 2. logic for saving skills sought
+        // handle sought skills submit
         document.getElementById('skillSeekForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const skillsToSubmit = [];
-            
-            // iterate over the seek toggle checkboxes
             const skillCheckboxes = document.querySelectorAll('.seek-toggle');
 
             skillCheckboxes.forEach(checkbox => {
@@ -4282,7 +4228,7 @@ seedDatabase();
             }
         });
         
-        // 3. logic for suggesting a skill
+        // handle skill suggestion
         document.getElementById('suggestSkillForm').addEventListener('submit', async (e) => {
              e.preventDefault();
              const skillName = document.getElementById('newSkillName').value;
@@ -4302,7 +4248,7 @@ seedDatabase();
             }
         });
 
-        // 4. logic for basic profile update
+        // handle profile update
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -4323,8 +4269,7 @@ seedDatabase();
             }
         });
 
-       // 5. pre-fill skills on page load
-       // fetches the users current skills and checks the boxes
+       // load existing skills on page load
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const response = await axios.get(`/api/user/skills/${userId}`);
@@ -4334,7 +4279,7 @@ seedDatabase();
                     skillList.forEach(skill => {
                         const id = skill.skill_id;
                         
-                        // check the master toggle for this skill
+                        // check the main toggle
                         const masterBox = document.getElementById(`${type}skill_${id}`);
                         if (masterBox) masterBox.checked = true;
 
@@ -4344,13 +4289,13 @@ seedDatabase();
                         const virtualBox = document.querySelector(`${virtualClass}[data-id="${id}"]`);
                         const inPersonBox = document.querySelector(`${inPersonClass}[data-id="${id}"]`);
 
-                        // determine which location boxes to check based on db flags
+                        // set location preferences
                         if (skill.is_virtual_only) {
                             if (virtualBox) virtualBox.checked = true;
                         } else if (skill.is_inperson_only) {
                             if (inPersonBox) inPersonBox.checked = true;
                         } else {
-                            // if neither is restricted check both
+                            // flexible means both checked
                             if (virtualBox) virtualBox.checked = true;
                             if (inPersonBox) inPersonBox.checked = true;
                         }
@@ -4377,7 +4322,9 @@ seedDatabase();
   <head>
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
+      /* profile container */
       .profile-header {
         background: #fbdddd;
         padding: 20px;
@@ -4385,6 +4332,8 @@ seedDatabase();
         margin-bottom: 20px;
         border: 5px solid #ea5455;
       }
+      
+      /* skill badges */
       .badge {
         display: inline-block;
         padding: 4px 8px;
@@ -4403,6 +4352,7 @@ seedDatabase();
         background-color: #ea5455cc;
       }
 
+      /* skill list styles */
       .skill-list {
         list-style: none;
         padding: 0;
@@ -4417,6 +4367,7 @@ seedDatabase();
         justify-content: space-between;
       }
 
+      /* reputation box */
       .rating-box {
         background: #fffbeb;
         border: 5px solid #fcd34d;
@@ -4583,7 +4534,7 @@ seedDatabase();
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
-      // creates a temporary toast notification on the screen
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -4591,32 +4542,30 @@ seedDatabase();
         toast.textContent = message;
         container.appendChild(toast);
 
-        // triggers the slide in animation
+        // animate in
         requestAnimationFrame(() => toast.classList.add("show"));
 
-        // removes the toast after 3 seconds
+        // remove after delay
         setTimeout(() => {
           toast.classList.remove("show");
           setTimeout(() => toast.remove(), 300);
         }, 3000);
       }
 
-      // allows a user to report another user for bad behavior
+      // handle reporting a user
       async function reportUser(reportedUserId) {
-        // asks the user to type a reason for the report
+        // prompt for reason
         const reason = prompt("Please describe the issue with this user:");
 
-        // if the user clicks cancel do nothing
         if (!reason) return;
 
         try {
-          // sends the report details to the api
+          // submit report
           const response = await axios.post("/api/reports", {
             reportedUserId: reportedUserId,
             reason: reason,
           });
 
-          // shows a success message if it worked
           showToast(response.data.message, "success");
         } catch (error) {
           console.error(error);
@@ -4627,7 +4576,6 @@ seedDatabase();
   </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\rating_form.ejs
    ========================================================================== */
@@ -4637,8 +4585,9 @@ seedDatabase();
   <head>
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <style>
-      /* specific styles for the rating form container */
+      /* form container */
       .rating-container {
         max-width: 600px;
         margin: 0 auto;
@@ -4648,7 +4597,7 @@ seedDatabase();
         background-color: #f9f9f9;
       }
 
-      /* styles for the radio button options to ensure alignment */
+      /* radio button alignment */
       .radio-option {
         display: flex;
         align-items: center;
@@ -4664,7 +4613,7 @@ seedDatabase();
         margin-bottom: 0;
       }
 
-      /* styling for the feedback text area */
+      /* feedback text area */
       textarea {
         width: 100%;
         height: 100px;
@@ -4736,7 +4685,7 @@ seedDatabase();
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      // helper function to show toast notifications
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -4744,53 +4693,49 @@ seedDatabase();
         toast.textContent = message;
         container.appendChild(toast);
 
-        // triggers the slide in animation
+        // animate in
         requestAnimationFrame(() => toast.classList.add("show"));
 
-        // removes the toast after 3 seconds
+        // remove after delay
         setTimeout(() => {
           toast.classList.remove("show");
           setTimeout(() => toast.remove(), 300);
         }, 3000);
       }
 
-      // handles the form submission
+      // handle form submit
       document
         .getElementById("ratingForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
 
-          // 1. Select the button so we can lock it
           const submitBtn = document.querySelector('button[type="submit"]');
           const originalText = submitBtn.textContent;
 
-          // capture form values
           const sessionId = document.getElementById("sessionId").value;
           const raterId = document.getElementById("raterId").value;
           const rateeId = document.getElementById("rateeId").value;
           const feedbackText = document.getElementById("feedbackText").value;
 
-          // determine which radio button was selected
           const likeRadio = document.querySelector(
             'input[name="likeStatus"]:checked'
           );
           const likeStatus = likeRadio ? likeRadio.value === "true" : null;
 
-          // ensures a rating is actually selected
           if (likeStatus === null) {
             showToast(
               "Please select whether you recommend this teacher.",
               "error"
             );
-            return; // Stop here (don't disable the button yet)
+            return;
           }
 
-          // 2. LOCK THE BUTTON (Visual Feedback + Prevention)
+          // disable button to prevent double submit
           submitBtn.disabled = true;
           submitBtn.textContent = "Submitting...";
 
           try {
-            // sends the rating to the backend api
+            // send rating
             await axios.post("/api/sessions/rate", {
               sessionId: sessionId,
               raterId: raterId,
@@ -4801,12 +4746,12 @@ seedDatabase();
 
             showToast("Rating submitted!", "success");
 
-            // redirects the user back to their sessions list
+            // redirect to sessions list
             setTimeout(() => {
               window.location.href = "/my_sessions";
             }, 1500);
           } catch (error) {
-            // 3. UNLOCK THE BUTTON (If it fails, let them try again)
+            // re-enable button on error
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
 
@@ -4819,7 +4764,6 @@ seedDatabase();
   </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\register.ejs
    ========================================================================== */
@@ -4829,6 +4773,7 @@ seedDatabase();
 <head>
     <title>SkillSwap - Register</title>
     <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
 </head>
 <body>
     <div id="toast-container"></div>
@@ -4878,7 +4823,8 @@ seedDatabase();
                 <option value="initials">🔠 Initials</option>
                 <option value="micah">🎨 Hand Drawn</option>
             </select>
-            <p style="text-color: black; font-weight: bold;">* = Required field</p>
+            
+            <p style="color: black; font-weight: bold;">* = Required field</p>
 
             <button type="submit">Register Account</button>
         </form>
@@ -4891,7 +4837,7 @@ seedDatabase();
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <script>
-        // helper function to show toast notifications
+        // show toast notification
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -4899,25 +4845,23 @@ seedDatabase();
             toast.textContent = message;
             container.appendChild(toast);
             
-            // triggers the slide in animation
+            // animate in
             requestAnimationFrame(() => toast.classList.add('show'));
             
-            // removes the toast after 3 seconds
+            // remove after delay
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // listens for the form submit event
+        // handle form submit
         document.getElementById('registerForm').addEventListener('submit', handleRegisterSubmit);
 
-        // handles the registration logic
         async function handleRegisterSubmit(event) {
-            // prevents the default form submission to stop page reload
             event.preventDefault(); 
 
-            // get values from the form inputs
+            // capture form data
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPassword').value;
             const passwordConfirm = document.getElementById('passwordConfirm').value;
@@ -4929,14 +4873,14 @@ seedDatabase();
             const messageArea = document.getElementById('messageArea');
             messageArea.textContent = ''; 
 
-            // client side check to ensure passwords match
+            // validate passwords match
             if (password !== passwordConfirm) {
                 showToast('Error: Passwords do not match.', 'error');
                 return;
             }
 
             try {
-                // sends the registration data to the backend api
+                // send registration data
                 const response = await axios.post('/api/register', {
                     email: email,
                     password: password,
@@ -4947,18 +4891,17 @@ seedDatabase();
                     avatarStyle: avatarStyle
                 });
 
-                // if registration is successful redirect to the login page
+                // success redirect
                 if (response.status === 201) {
                     showToast('Registration successful! Redirecting to login...', 'success');
                     
-                    // wait a moment for the toast to show before redirecting
                     setTimeout(() => {
                         window.location.href = '/'; 
                     }, 1500);
                 }
 
             } catch (error) {
-                // handle errors like duplicate email
+                // handle errors
                 let errorMessage = 'An unexpected server error occurred.';
                 
                 if (error.response) {
@@ -4973,7 +4916,6 @@ seedDatabase();
 </body>
 </html>
 
-
 /* ==========================================================================
    FILE: views\reset_password.ejs
    ========================================================================== */
@@ -4985,6 +4927,7 @@ seedDatabase();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Password - SkillSwap</title>
     <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh; background-color: #f9fafb;">
 
@@ -5009,6 +4952,7 @@ seedDatabase();
 </body>
 </html>
 
+
 /* ==========================================================================
    FILE: views\session_request.ejs
    ========================================================================== */
@@ -5018,6 +4962,7 @@ seedDatabase();
   <head>
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
   </head>
   <body>
     <div id="toast-container"></div>
@@ -5074,10 +5019,10 @@ seedDatabase();
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
       const requesterId = "<%= user.id %>";
-      // flag to prevent double submission
+      // prevent double submission
       window.isProcessing = false;
 
-      // helper function to show toast notifications
+      // show toast notification
       function showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -5091,12 +5036,12 @@ seedDatabase();
         }, 3000);
       }
 
-      // loads the list of tutors who teach the selected skill
+      // load tutors for skill
       async function loadProviders() {
         const skillId = document.getElementById("skillTaughtId").value;
         const providerSelect = document.getElementById("providerId");
 
-        // reset provider dropdown
+        // reset dropdown
         providerSelect.innerHTML =
           '<option value="">-- Loading Tutors... --</option>';
         providerSelect.disabled = true;
@@ -5108,7 +5053,7 @@ seedDatabase();
         }
 
         try {
-          // fetch specific providers for this skill from the api
+          // fetch providers
           const response = await axios.get(`/api/skills/${skillId}/providers`);
           const providers = response.data.providers;
 
@@ -5120,7 +5065,7 @@ seedDatabase();
               '<option value="" disabled>No tutors found for this skill</option>';
             showToast("No tutors currently offer this skill.", "info");
           } else {
-            // populate the dropdown with available tutors
+            // populate dropdown
             providers.forEach((p) => {
               providerSelect.innerHTML += `<option value="${p.user_id}">${p.user_name}</option>`;
             });
@@ -5134,13 +5079,13 @@ seedDatabase();
         }
       }
 
-      // handles form submission with locking and toasts
+      // handle form submission
       document
         .getElementById("sessionRequestForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
 
-          // checks lock to prevent double clicks
+          // check lock
           if (window.isProcessing) return;
 
           const submitBtn = document.querySelector('button[type="submit"]');
@@ -5156,17 +5101,17 @@ seedDatabase();
             return;
           }
 
-          // sets lock and updates button text
+          // set lock
           window.isProcessing = true;
           submitBtn.disabled = true;
           submitBtn.textContent = "Sending...";
 
-          // converts local time to utc for storage
+          // convert time to utc
           const localDate = new Date(rawDateValue);
           const sessionDateTime = localDate.toISOString();
 
           try {
-            // sends the session request to the api
+            // send request
             const response = await axios.post("/api/sessions/request", {
               requesterId: requesterId,
               providerId: providerId,
@@ -5177,7 +5122,7 @@ seedDatabase();
 
             showToast("Request sent successfully!", "success");
 
-            // redirects to the session list after a short delay
+            // redirect to sessions
             setTimeout(() => {
               window.location.href = "/my_sessions";
             }, 1500);
@@ -5186,20 +5131,20 @@ seedDatabase();
               error.response?.data?.message || "Error submitting request.";
             showToast(msg, "error");
 
-            // resets button only on error
+            // reset button
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
           } finally {
-            // releases lock
+            // release lock
             window.isProcessing = false;
           }
         });
 
-      // PREVENT PAST DATES
+      // prevent past dates
       const dateInput = document.getElementById("sessionDateTime");
       const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Adjust for local time
-      dateInput.min = now.toISOString().slice(0, 16); // Set minimum to "Right Now"
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); 
+      dateInput.min = now.toISOString().slice(0, 16); 
     </script>
   </body>
 </html>

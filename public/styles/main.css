@@ -1,36 +1,32 @@
-/* =========================================
-   1. VARIABLES & THEME CONFIGURATION
-   ========================================= */
+/* variables and theme config */
 :root {
-  /* New Vibrant Color Scheme */
-  --primary-color: #2d4059; /* Deep Navy Blue */
+  /* color scheme */
+  --primary-color: #2d4059;
   --primary-hover: #1f2d3f;
-  --secondary-color: #ea5455; /* Bright Red/Coral */
-  --accent-color: #f07b3f; /* Warm Orange */
-  --highlight-color: #ffd460; /* Sunny Yellow */
+  --secondary-color: #ea5455;
+  --accent-color: #f07b3f;
+  --highlight-color: #ffd460;
 
-  /* Additional States */
+  /* state colors */
   --success-color: #10b981;
   --info-color: #3b82f6;
   --warning-color: #f07b3f;
 
-  /* Colorful Neutral Scale */
-  --bg-body: #ce6060; /* Darker orange background */
-  --bg-card: #ffffff; /* White Cards */
-  --bg-card-alt: #f0f9ff; /* Light blue alternative */
-  --text-main: #1f2937; /* Dark Gray Text */
-  --text-muted: #6b7280; /* Medium Gray Text */
-  --border-color: #ffd46033; /* Soft yellow-tinted borders */
+  /* neutral colors */
+  --bg-body: #ce6060;
+  --bg-card: #ffffff;
+  --bg-card-alt: #f0f9ff;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --border-color: #ffd46033;
 
-  /* Shadows with warm tones */
+  /* shadows */
   --shadow-sm: 0 1px 2px 0 rgba(45, 64, 89, 0.1);
   --shadow-md: 0 4px 6px -1px rgba(45, 64, 89, 0.15),
     0 2px 4px -1px rgba(240, 123, 63, 0.1);
 }
 
-/* =========================================
-   2. GLOBAL RESETS & LAYOUT
-   ========================================= */
+/* global layout */
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #e8f4f8 0%, #f0f9ff 100%);
@@ -107,26 +103,25 @@ button:active {
   transform: translateY(0);
 }
 
-/* Red Button -> Yellow Text on Hover (Instant, No Fade) */
+/* primary button style */
 .button-blue,
 .btn-primary {
-  background: #ea5455; /* Coral Red Background */
-  color: white !important; /* White Text Default */
+  background: #ea5455;
+  color: white !important;
   border: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-decoration: none; /* vital since we are using <a> tags */
-  display: inline-block; /* ensures padding works on links */
+  text-decoration: none; /* needed for anchor tags */
+  display: inline-block;
 }
 
 .button-blue:hover,
 .btn-primary:hover {
-  background: #ea5455; /* Background stays Red */
-  color: #ffd460 !important; /* Text turns Sunny Yellow */
+  background: #ea5455;
+  color: #ffd460 !important;
   box-shadow: 0 6px 12px rgba(234, 84, 85, 0.4);
-  /* Note: No transition or transform property here */
 }
 
-/* Secondary button style */
+/* secondary button */
 button.secondary {
   background: linear-gradient(135deg, var(--primary-color), #3d5a7e);
 }
@@ -135,7 +130,7 @@ button.secondary:hover {
   box-shadow: 0 4px 12px rgba(45, 64, 89, 0.4);
 }
 
-/* Accent button style */
+/* accent button */
 button.accent {
   background: var(--highlight-color);
   color: var(--primary-color);
@@ -176,9 +171,7 @@ label {
   color: var(--primary-color);
 }
 
-/* =========================================
-   3. NAVBAR STYLING
-   ========================================= */
+/* navbar styles */
 .navbar {
   width: 100%;
   height: 60px;
@@ -232,7 +225,7 @@ label {
   color: white;
 }
 
-/* Profile Dropdown / Avatar Area */
+/* user profile area */
 .nav-user {
   display: flex;
   align-items: center;
@@ -249,9 +242,7 @@ label {
   box-shadow: 0 2px 8px rgba(255, 212, 96, 0.4);
 }
 
-/* =========================================
-   4. TOAST NOTIFICATIONS
-   ========================================= */
+/* toast notifications */
 #toast-container {
   position: fixed;
   top: 80px;
@@ -302,9 +293,7 @@ label {
   border-left: 5px solid #d35400;
 }
 
-/* =========================================
-   5. COMPONENT FIXES
-   ========================================= */
+/* component styles */
 .radio-option {
   display: flex;
   align-items: center;
